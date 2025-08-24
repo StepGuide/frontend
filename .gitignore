@@ -7,13 +7,23 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependency directories
 node_modules
+
+# macOS
 .DS_Store
+
+# Vite build output
 dist
 dist-ssr
 coverage
-*.local
 
+# Local env files
+*.local
+.env*
+.env.*   # e.g. .env.production, .env.development 등
+
+# Cypress
 /cypress/videos/
 /cypress/screenshots/
 
@@ -27,4 +37,5 @@ coverage
 *.sln
 *.sw?
 
+# TypeScript cache
 *.tsbuildinfo

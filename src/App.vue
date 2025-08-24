@@ -1,6 +1,12 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 import HelloWorld from './components/HelloWorld.vue'
+import { onMounted } from 'vue'
+import { testConnection } from '@/api/testApi'
+
+onMounted(() => {
+  testConnection()
+})
 </script>
 
 <template>
@@ -15,9 +21,11 @@ import HelloWorld from './components/HelloWorld.vue'
         <RouterLink to="/about">About</RouterLink>
       </nav>
     </div>
+    <h1> 백엔드 연결 테스트 중</h1>
   </header>
 
   <RouterView />
+  
 </template>
 
 <style scoped>
