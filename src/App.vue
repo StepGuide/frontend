@@ -21,7 +21,6 @@ onMounted(() => {
         <RouterLink to="/about">About</RouterLink>
       </nav>
     </div>
-    <h1> 백엔드 연결 테스트 중</h1>
   </header>
 
   <RouterView />
