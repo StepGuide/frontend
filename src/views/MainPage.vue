@@ -1,9 +1,5 @@
-<script setup>
-// 필요한 로직은 여기에 추가
-</script>
-
 <template>
-  <div class="home-container">
+  <div class="main-page">
     <!-- 상단 네비게이션 -->
     <nav class="navbar">
       <div class="nav-content">
@@ -18,6 +14,10 @@
           <button class="profile-btn">
             <span class="profile-icon">👤</span>
           </button>
+          <button class="mode-toggle-btn" @click="toggleToGuardianMode">
+            <span class="toggle-icon">🧓</span>
+            <span class="toggle-text">보호자 모드</span>
+          </button>
         </div>
       </div>
     </nav>
@@ -31,7 +31,6 @@
           <p class="welcome-subtitle">오늘도 안전하게 금융 서비스를 이용해보세요</p>
         </div>
         <div class="help-request-card">
-          <div class="help-icon">🆘</div>
           <div class="help-content">
             <h3>도움이 필요하신가요?</h3>
             <p>6자리 코드로 전문가와 연결</p>
@@ -101,12 +100,12 @@
             <button class="service-btn">이용하기</button>
           </div>
           
-          <div class="service-card">
-            <div class="service-icon">📱</div>
-            <h3>모바일뱅킹</h3>
-            <p>언제 어디서나 편리하게</p>
-            <button class="service-btn">이용하기</button>
-          </div>
+                     <div class="service-card">
+             <div class="service-icon">🎯</div>
+             <h3>연습 모드</h3>
+             <p>실제 계좌에 영향 없이 연습</p>
+             <button class="service-btn">연습하기</button>
+           </div>
           
           <div class="service-card">
             <div class="service-icon">🔒</div>
@@ -124,19 +123,7 @@
         </div>
       </div>
 
-      <!-- 연습 모드 -->
-      <div class="practice-section">
-        <div class="practice-card">
-          <div class="practice-content">
-            <div class="practice-icon">🎯</div>
-            <div class="practice-text">
-              <h3>연습 모드</h3>
-              <p>실제 계좌에 영향 없이 안전하게 연습해보세요</p>
-            </div>
-          </div>
-          <button class="practice-btn">연습 시작하기</button>
-        </div>
-      </div>
+      
 
       <!-- 빠른 도움말 -->
       <div class="quick-help">
@@ -163,22 +150,36 @@
   </div>
 </template>
 
+<script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+// 보호자 모드로 전환
+const toggleToGuardianMode = () => {
+  router.push('/guardian')
+}
+</script>
+
 <style scoped>
-/* CSS 변수 정의 */
-:root {
-  --primary-color: #00A651;
-  --primary-light: #E8F5E8;
-  --secondary-color: #0066B3;
-  --accent-color: #FF6600;
-  --accent-light: #FFF3E0;
-  --text-primary: #1A1A1A;
-  --text-secondary: #666666;
-  --text-light: #999999;
-  --background: #F8F9FA;
-  --surface: #FFFFFF;
-  --border: #E1E5E9;
-  --shadow: rgba(0, 0, 0, 0.08);
-  --shadow-hover: rgba(0, 0, 0, 0.12);
+/* CSS 변수 정의 - 단순하고 명확한 색상 */
+.main-page {
+  --kb-yellow: #FFD700;
+  --kb-orange: #FF8C00;
+  --kb-orange-light: #FFE4B3;
+  --kb-orange-dark: #E67300;
+  --kb-blue: #0066B3;
+  --kb-blue-light: #E6F0FA;
+  --kb-blue-dark: #004C8C;
+  --kb-gray: #F8F9FA;
+  --kb-gray-light: #FFFFFF;
+  --kb-gray-dark: #495057;
+  --kb-text-primary: #1A1A1A;
+  --kb-text-secondary: #666666;
+  --kb-text-light: #999999;
+  --kb-border: #E1E5E9;
+  --kb-shadow: rgba(0, 0, 0, 0.08);
+  --kb-shadow-hover: rgba(0, 0, 0, 0.12);
 }
 
 * {
@@ -187,21 +188,21 @@
   box-sizing: border-box;
 }
 
-.home-container {
+.main-page {
   min-height: 100vh;
-  background: var(--background);
+  background: var(--kb-gray);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: var(--text-primary);
+  color: var(--kb-text-primary);
 }
 
-/* 네비게이션 */
+/* 네비게이션 - 단순한 디자인 */
 .navbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: var(--kb-gray-light);
+  border-bottom: 3px solid var(--kb-orange);
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .nav-content {
@@ -221,12 +222,13 @@
 
 .logo-icon {
   font-size: 28px;
+  color: var(--kb-orange);
 }
 
 .logo-text {
   font-size: 20px;
   font-weight: 700;
-  color: var(--primary-color);
+  color: var(--kb-orange);
 }
 
 .nav-actions {
@@ -236,7 +238,7 @@
 
 .notification-btn,
 .profile-btn {
-  background: none;
+  background: var(--kb-orange);
   border: none;
   padding: 8px;
   border-radius: 50%;
@@ -247,29 +249,57 @@
   justify-content: center;
 }
 
+.mode-toggle-btn {
+  background: var(--kb-blue);
+  color: var(--kb-gray-light);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-toggle-btn:hover {
+  background: var(--kb-blue-dark);
+}
+
+.toggle-icon {
+  font-size: 16px;
+}
+
+.toggle-text {
+  font-size: 14px;
+}
+
 .notification-btn:hover,
 .profile-btn:hover {
-  background: var(--background);
+  background: var(--kb-orange-dark);
 }
 
 .notification-icon,
 .profile-icon {
   font-size: 20px;
+  color: var(--kb-gray-light);
 }
 
 /* 메인 콘텐츠 */
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 16px;
 }
 
 /* 환영 섹션 */
 .welcome-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 .welcome-content {
@@ -279,28 +309,31 @@
 }
 
 .welcome-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--text-primary);
+  font-size: 36px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: var(--kb-text-primary);
 }
 
 .welcome-subtitle {
-  font-size: 16px;
-  color: var(--text-secondary);
-  line-height: 1.5;
+  font-size: 18px;
+  color: var(--kb-text-secondary);
+  line-height: 1.6;
+  font-weight: 600;
 }
 
+/* 도움 요청 카드 - 단순한 단색 */
 .help-request-card {
-  background: linear-gradient(135deg, var(--accent-color) 0%, #FF8533 100%);
-  border-radius: 20px;
-  padding: 32px;
-  color: white;
+  background: var(--kb-yellow);
+  border-radius: 16px;
+  padding: 24px;
+  color: var(--kb-text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(255, 102, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--kb-orange);
 }
 
 .help-icon {
@@ -310,134 +343,144 @@
 
 .help-content h3 {
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 8px;
+  color: var(--kb-text-primary);
 }
 
 .help-content p {
   font-size: 16px;
-  margin-bottom: 20px;
-  opacity: 0.9;
+  margin-bottom: 16px;
+  color: var(--kb-text-primary);
+  font-weight: 600;
 }
 
 .help-request-btn {
-  background: white;
-  color: var(--accent-color);
+  background: var(--kb-orange);
+  color: var(--kb-gray-light);
   border: none;
   padding: 12px 24px;
   border-radius: 25px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
+  border: 2px solid var(--kb-orange);
 }
 
 .help-request-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  background: var(--kb-orange-dark);
+  border-color: var(--kb-orange-dark);
 }
 
-/* 섹션 헤더 */
+/* 섹션 헤더 - 단순한 디자인 */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: var(--kb-gray-light);
+  border-radius: 12px;
+  border-left: 4px solid var(--kb-orange);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .section-header h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--kb-text-primary);
 }
 
 .view-all-btn {
-  background: none;
+  background: var(--kb-orange);
+  color: var(--kb-gray-light);
   border: none;
-  color: var(--primary-color);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 20px;
   transition: all 0.2s ease;
 }
 
 .view-all-btn:hover {
-  background: var(--primary-light);
+  background: var(--kb-orange-dark);
 }
 
-/* 계좌 정보 */
+/* 계좌 정보 - 단순한 디자인 */
 .account-overview {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .account-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 20px;
 }
 
 .account-card {
-  background: var(--surface);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 4px 20px var(--shadow);
-  border: 1px solid var(--border);
-  transition: all 0.3s ease;
+  background: var(--kb-gray-light);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px var(--kb-shadow);
+  border: 1px solid var(--kb-border);
+  transition: all 0.2s ease;
 }
 
 .account-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 32px var(--shadow-hover);
+  box-shadow: 0 6px 20px var(--kb-shadow-hover);
 }
 
 .account-card.primary {
-  border-left: 4px solid var(--primary-color);
+  border-left: 4px solid var(--kb-orange);
 }
 
 .account-card.secondary {
-  border-left: 4px solid var(--secondary-color);
+  border-left: 4px solid var(--kb-blue);
 }
 
 .card-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .card-icon {
   font-size: 24px;
+  color: var(--kb-orange);
 }
 
 .card-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--kb-text-primary);
 }
 
 .balance-info {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .balance-label {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
+  font-size: 16px;
+  color: var(--kb-text-secondary);
+  margin-bottom: 10px;
+  font-weight: 600;
 }
 
 .balance-amount {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin-bottom: 8px;
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--kb-orange);
+  margin-bottom: 10px;
 }
 
 .account-number {
-  font-size: 14px;
-  color: var(--text-light);
+  font-size: 16px;
+  color: var(--kb-text-primary);
   font-family: 'Courier New', monospace;
+  font-weight: 700;
 }
 
 .card-actions {
@@ -446,20 +489,19 @@
 }
 
 .action-btn {
-  background: var(--primary-light);
-  color: var(--primary-color);
+  background: var(--kb-orange);
+  color: var(--kb-gray-light);
   border: none;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .action-btn:hover {
-  background: var(--primary-color);
-  color: white;
+  background: var(--kb-orange-dark);
 }
 
 .transaction-list {
@@ -473,7 +515,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--kb-border);
 }
 
 .transaction-item:last-child {
@@ -487,12 +529,12 @@
 }
 
 .transaction-type {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .transaction-type.income {
-  color: var(--primary-color);
+  color: var(--kb-orange);
 }
 
 .transaction-type.expense {
@@ -500,183 +542,131 @@
 }
 
 .transaction-desc {
-  font-size: 12px;
-  color: var(--text-light);
+  font-size: 14px;
+  color: var(--kb-text-secondary);
+  font-weight: 600;
 }
 
 .transaction-amount {
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: 700;
+  font-size: 18px;
 }
 
 .transaction-amount.income {
-  color: var(--primary-color);
+  color: var(--kb-orange);
 }
 
 .transaction-amount.expense {
   color: #DC3545;
 }
 
-/* 서비스 섹션 */
+/* 서비스 섹션 - 단순한 디자인 */
 .services-section {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
 }
 
 .service-card {
-  background: var(--surface);
-  border-radius: 20px;
-  padding: 32px 24px;
+  background: var(--kb-gray-light);
+  border-radius: 16px;
+  padding: 24px 20px;
   text-align: center;
-  box-shadow: 0 4px 20px var(--shadow);
-  border: 1px solid var(--border);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px var(--kb-shadow);
+  border: 1px solid var(--kb-border);
+  transition: all 0.2s ease;
 }
 
 .service-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 32px var(--shadow-hover);
+  box-shadow: 0 6px 20px var(--kb-shadow-hover);
 }
 
 .service-icon {
-  font-size: 48px;
-  margin-bottom: 20px;
+  font-size: 40px;
+  margin-bottom: 16px;
+  color: var(--kb-orange);
 }
 
 .service-card h3 {
   font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: var(--text-primary);
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--kb-text-primary);
 }
 
 .service-card p {
   font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 24px;
-  line-height: 1.5;
+  color: var(--kb-text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.6;
+  font-weight: 600;
 }
 
 .service-btn {
-  background: var(--primary-color);
-  color: white;
+  background: var(--kb-orange);
+  color: var(--kb-gray-light);
   border: none;
   padding: 12px 24px;
   border-radius: 25px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .service-btn:hover {
-  background: #008F45;
-  transform: translateY(-2px);
+  background: var(--kb-orange-dark);
 }
 
-/* 연습 섹션 */
-.practice-section {
-  margin-bottom: 40px;
-}
 
-.practice-card {
-  background: linear-gradient(135deg, var(--primary-color) 0%, #00B85C 100%);
-  border-radius: 20px;
-  padding: 32px;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 8px 32px rgba(0, 166, 81, 0.3);
-}
 
-.practice-content {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.practice-icon {
-  font-size: 48px;
-}
-
-.practice-text h3 {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.practice-text p {
-  font-size: 16px;
-  opacity: 0.9;
-}
-
-.practice-btn {
-  background: white;
-  color: var(--primary-color);
-  border: none;
-  padding: 16px 32px;
-  border-radius: 25px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.practice-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-}
-
-/* 빠른 도움말 */
+/* 빠른 도움말 - 단순한 디자인 */
 .quick-help {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .help-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 .help-item {
-  background: var(--surface);
-  border-radius: 16px;
-  padding: 20px;
+  background: var(--kb-gray-light);
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid var(--border);
+  border: 1px solid var(--kb-border);
 }
 
 .help-item:hover {
-  background: var(--primary-light);
-  border-color: var(--primary-color);
-  transform: translateY(-2px);
+  background: var(--kb-orange-light);
+  border-color: var(--kb-orange);
 }
 
 .help-item .help-icon {
-  font-size: 24px;
-  color: var(--primary-color);
+  font-size: 20px;
+  color: var(--kb-orange);
 }
 
 .help-item span {
   font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-weight: 600;
+  color: var(--kb-text-primary);
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .main-content {
-    padding: 16px;
+    padding: 12px;
   }
   
   .welcome-section {
@@ -692,22 +682,18 @@
     grid-template-columns: 1fr;
   }
   
-  .practice-card {
-    flex-direction: column;
-    text-align: center;
-    gap: 20px;
-  }
+  
   
   .help-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   
   .welcome-title {
-    font-size: 24px;
+    font-size: 28px;
   }
   
   .balance-amount {
-    font-size: 24px;
+    font-size: 28px;
   }
 }
 
@@ -717,7 +703,7 @@
   }
   
   .main-content {
-    padding: 12px;
+    padding: 8px;
   }
   
   .help-grid {
