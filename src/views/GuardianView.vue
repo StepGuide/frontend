@@ -19,13 +19,13 @@
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
       <!-- 연결되지 않은 상태 -->
-      <div v-if="!isConnected" class="connection-section">
+      <div v-if="!connected" class="connection-section">
         <div class="connection-card">
           <div class="connection-header">
             <h2>🧓 보호자 연결</h2>
             <p>사용자의 6자리 도움 코드를 입력해주세요</p>
           </div>
-          
+
           <div class="code-input-section">
             <div class="code-input-group">
               <input 
@@ -62,10 +62,10 @@
         <!-- 연결 상태 헤더 -->
         <div class="connection-status">
           <div class="status-header">
-            <h2>🧓 연결된 사용자: {{ connectedUser.name }}</h2>
+            <h2>🧓 연결된 사용자</h2>
             <div class="status-indicator">
               <span class="status-dot connected"></span>
-              <span class="status-text">연결됨</span>
+              <span class="status-text">연결됨 ({{ code }})</span>
             </div>
           </div>
         </div>
@@ -74,11 +74,15 @@
         <div class="user-status-card">
           <div class="status-row">
             <span class="status-label">📍 현재 위치:</span>
-            <span class="status-value">{{ connectedUser.currentLocation }}</span>
+            <span class="status-value">{{ userState?.currentLocation || '정보 없음' }}</span>
           </div>
           <div class="status-row">
             <span class="status-label">🎯 강조 영역:</span>
-            <span class="status-value">{{ connectedUser.highlightedArea }}</span>
+            <span class="status-value">{{ userState?.highighlightedAreahlight || '없음' }}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">🎯 사용자 정보 영역:</span>
+            <span class="status-value">{{ userState?.userName || '없음' }}</span>
           </div>
         </div>
 
@@ -92,7 +96,7 @@
               placeholder="사용자에게 보낼 메시지를 입력하세요"
               class="message-input"
             />
-            <button class="send-btn" @click="sendMessage">전송</button>
+            <button class="send-btn" @click="sendMessageToUser(messageText)">전송</button>
           </div>
           <div class="quick-messages">
             <button 
@@ -110,33 +114,17 @@
         <div class="screen-preview">
           <h3>🗺 화면 미리보기</h3>
           <div class="preview-container">
-            <div class="preview-header">
-              <span>사용자 현재 화면 요약 뷰</span>
-            </div>
-            <div class="preview-content">
-              <div class="preview-placeholder">
-                <span class="preview-icon">📱</span>
-                <p>사용자 화면이 여기에 표시됩니다</p>
-                <p class="preview-detail">{{ connectedUser.currentLocation }}</p>
-              </div>
+            <div class="preview-placeholder">
+              <span class="preview-icon">📱</span>
+              <p>사용자 화면이 여기에 표시됩니다</p>
+              <p class="preview-detail">{{ userState?.currentPage }}</p>
             </div>
           </div>
         </div>
 
         <!-- 하단 액션 버튼들 -->
         <div class="action-buttons">
-          <button class="action-btn settings">
-            <span class="btn-icon">🔧</span>
-            <span class="btn-text">설정</span>
-          </button>
-          <button class="action-btn help">
-            <span class="btn-icon">📕</span>
-            <span class="btn-text">도움말</span>
-          </button>
-          <button class="action-btn disconnect" @click="disconnectUser">
-            <span class="btn-icon">🔚</span>
-            <span class="btn-text">연결 종료</span>
-          </button>
+          <button class="action-btn disconnect" @click="disconnect">🔚 연결 종료</button>
         </div>
       </div>
     </div>
@@ -144,92 +132,63 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import { useWebSocketGuardian } from '@/utils/useWebSocketGuardian';
 
-const router = useRouter()
-
-// 연결 상태
-const isConnected = ref(false)
-const connectionCode = ref(['', '', '', '', '', ''])
-const messageText = ref('')
-
-// 연결된 사용자 정보
-const connectedUser = ref({
-  name: '김영자님',
-  currentLocation: '이체 금액 입력 화면',
-  highlightedArea: '금액 입력 칸'
-})
-
-// 빠른 메시지
+const router = useRouter();
+const connectionCode = ref(['', '', '', '', '', '']);
+const code = ref('');
+const messageText = ref('');
+const codeInputs = ref([]);
 const quickMessages = [
   '다음 버튼을 눌러주세요',
   '금액을 입력해주세요',
   '계좌번호를 확인해주세요',
   '비밀번호를 입력해주세요',
-  '확인 버튼을 눌러주세요'
-]
+  '확인 버튼을 눌러주세요',
+];
 
-// 코드 입력 관련
-const codeInputs = ref([])
+// WebSocket 연결 관리
+const {
+  connect,
+  disconnect,
+  sendMessageToUser,
+  userState,
+  guardianMessage,
+  connected
+} = useWebSocketGuardian();
 
-const isCodeComplete = computed(() => {
-  return connectionCode.value.every(digit => digit !== '')
-})
+const isCodeComplete = computed(() => connectionCode.value.every((digit) => digit !== ''));
 
 const onCodeInput = (index, event) => {
-  const value = event.target.value
+  const value = event.target.value;
   if (value && index < 5) {
-    nextTick(() => {
-      codeInputs.value[index + 1]?.focus()
-    })
+    nextTick(() => codeInputs.value[index + 1]?.focus());
   }
-}
+};
 
 const onCodeKeydown = (index, event) => {
   if (event.key === 'Backspace' && !connectionCode.value[index] && index > 0) {
-    nextTick(() => {
-      codeInputs.value[index - 1]?.focus()
-    })
+    nextTick(() => codeInputs.value[index - 1]?.focus());
   }
-}
+};
 
-// 연결하기
 const connectToUser = () => {
-  const code = connectionCode.value.join('')
-  if (code === '123456') { // 테스트용 코드
-    isConnected.value = true
-    // 실제로는 WebSocket 연결 로직이 들어갈 자리
+  const fullCode = connectionCode.value.join('');
+  if (fullCode.length === 6) {
+    code.value = fullCode;
+    connect(fullCode); // ✅ WebSocket 연결
   } else {
-    alert('잘못된 코드입니다. 다시 확인해주세요.')
-    connectionCode.value = ['', '', '', '', '', '']
-    nextTick(() => {
-      codeInputs.value[0]?.focus()
-    })
+    alert('올바른 6자리 코드를 입력해주세요.');
   }
-}
+};
 
-// 메시지 전송
-const sendMessage = () => {
-  if (messageText.value.trim()) {
-    console.log('메시지 전송:', messageText.value)
-    // 실제로는 WebSocket을 통해 사용자에게 메시지 전송
-    messageText.value = ''
-  }
-}
-
-// 연결 종료
-const disconnectUser = () => {
-  isConnected.value = false
-  connectionCode.value = ['', '', '', '', '', '']
-  messageText.value = ''
-}
-
-// 모드 전환
 const toggleMode = () => {
-  router.push('/')
-}
+  router.push('/user');
+};
 </script>
+
 
 <style scoped>
 /* CSS 변수 정의 */
