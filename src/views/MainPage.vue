@@ -34,7 +34,7 @@
           <div class="help-content">
             <h3>도움이 필요하신가요?</h3>
             <p>6자리 코드로 전문가와 연결</p>
-            <button class="help-request-btn">도움 요청하기</button>
+            <button class="help-request-btn" @click="goToCoview">도움 요청하기</button>
           </div>
         </div>
       </div>
@@ -158,6 +158,11 @@ const router = useRouter()
 // 보호자 모드로 전환
 const toggleToGuardianMode = () => {
   router.push('/guardian')
+}
+
+// CoviewPage로 이동
+const goToCoview = () => {
+  router.push('/user')
 }
 </script>
 
