@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import MainPage from '../views/MainPage.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import MainPage from '../views/MainPage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,7 +27,17 @@ const router = createRouter({
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/AboutView.vue'),
     },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/login/LoginPage.vue'),
+    },
+    {
+      path: '/oauth/callback/kakao',
+      name: 'kakaoCallback',
+      component: () => import('../views/login/KakaoCallback.vue'),
+    },
   ],
-})
+});
 
-export default router
+export default router;
