@@ -14,11 +14,6 @@ const router = createRouter({
       component: () => import("../views/GuardianView.vue"),
     },
     {
-      path: "/home",
-      name: "home",
-      component: () => import("../views/HomeView.vue"),
-    },
-    {
       path: "/about",
       name: "about",
       // route level code-splitting
@@ -30,6 +25,16 @@ const router = createRouter({
       path: "/user",
       name: "user",
       component: () => import("../views/UserView.vue"),
+    },
+    {
+      path: "/login",
+      name: "login",
+      component: () => import("../views/login/LoginPage.vue"),
+    },
+    {
+      path: "/oauth/callback/kakao",
+      name: "kakaoCallback",
+      component: () => import("../views/login/KakaoCallback.vue"),
     },
   ],
 });
