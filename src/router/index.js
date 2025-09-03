@@ -36,6 +36,31 @@ const router = createRouter({
       name: "kakaoCallback",
       component: () => import("../views/login/KakaoCallback.vue"),
     },
+    {
+      path: "/transfer",
+      name: "transfer",
+      component: () => import("../views/TransferPage.vue"),
+    },
+    {
+      path: "/inquiry",
+      name: "inquiry",
+      component: () => import("../views/InquiryPage.vue"),
+    },
+    {
+      path: "/account-overview",
+      name: "accountOverview",
+      component: () => import("../views/AccountOverviewPage.vue"),
+    },
+    {
+      path: "/practice",
+      name: "practice",
+      component: () => import("../views/PracticePage.vue"),
+    },
+    {
+      path: "/account-favorites",
+      name: "accountFavorites",
+      component: () => import("../views/AccountFavoritesPage.vue"),
+    },
   ],
 });
 

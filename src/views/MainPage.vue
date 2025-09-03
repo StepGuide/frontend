@@ -43,7 +43,7 @@
       <div class="account-overview">
         <div class="section-header">
           <h2>내 계좌 현황</h2>
-          <button class="view-all-btn">전체보기</button>
+          <button class="view-all-btn" @click="goToAccountOverview">전체보기</button>
         </div>
         <div class="account-grid">
           <div class="account-card primary">
@@ -57,8 +57,8 @@
               <div class="account-number">123-456789-01-234</div>
             </div>
             <div class="card-actions">
-              <button class="action-btn">이체</button>
-              <button class="action-btn">조회</button>
+              <button class="action-btn" @click="goToTransfer">이체</button>
+              <button class="action-btn" @click="goToInquiry">조회</button>
             </div>
           </div>
           
@@ -97,21 +97,28 @@
             <div class="service-icon">💳</div>
             <h3>이체하기</h3>
             <p>안전하고 간편한 계좌이체</p>
-            <button class="service-btn">이용하기</button>
+            <button class="service-btn" @click="goToTransfer">이용하기</button>
           </div>
           
-                     <div class="service-card">
-             <div class="service-icon">🎯</div>
-             <h3>연습 모드</h3>
-             <p>실제 계좌에 영향 없이 연습</p>
-             <button class="service-btn">연습하기</button>
-           </div>
+          <div class="service-card">
+            <div class="service-icon">🎯</div>
+            <h3>연습 모드</h3>
+            <p>실제 계좌에 영향 없이 연습</p>
+            <button class="service-btn" @click="goToPractice">연습하기</button>
+          </div>
           
           <div class="service-card">
             <div class="service-icon">🔒</div>
             <h3>보안설정</h3>
             <p>계좌 보안 관리</p>
             <button class="service-btn">설정하기</button>
+          </div>
+
+          <div class="service-card">
+            <div class="service-icon">⭐</div>
+            <h3>즐겨찾기</h3>
+            <p>계좌 즐겨찾기 관리</p>
+            <button class="service-btn" @click="goToAccountFavorites">즐겨찾기</button>
           </div>
           
           <div class="service-card">
@@ -163,6 +170,31 @@ const toggleToGuardianMode = () => {
 // CoviewPage로 이동
 const goToCoview = () => {
   router.push('/user')
+}
+
+// 이체 페이지로 이동
+const goToTransfer = () => {
+  router.push('/transfer')
+}
+
+// 조회 페이지로 이동
+const goToInquiry = () => {
+  router.push('/inquiry')
+}
+
+// 계좌 현황 전체보기 페이지로 이동
+const goToAccountOverview = () => {
+  router.push('/account-overview')
+}
+
+// 연습모드 페이지로 이동
+const goToPractice = () => {
+  router.push('/practice')
+}
+
+// 계좌 즐겨찾기 페이지로 이동
+const goToAccountFavorites = () => {
+  router.push('/account-favorites')
 }
 </script>
 
