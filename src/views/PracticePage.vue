@@ -7,7 +7,6 @@
           <button class="back-btn" @click="goBack">
             <span class="back-icon">←</span>
           </button>
-          <span class="logo-icon">🎯</span>
           <span class="logo-text">연습 모드</span>
         </div>
         <div class="nav-actions">
@@ -530,27 +529,59 @@ const formatNumber = (num) => {
 </script>
 
 <style scoped>
-/* CSS 변수 정의 */
+/* CSS 변수 정의 - KB국민은행 공식 브랜드 컬러 */
 .practice-page {
-  --kb-yellow: #FFD700;
-  --kb-orange: #FF8C00;
-  --kb-orange-light: #FFE4B3;
-  --kb-orange-dark: #E67300;
-  --kb-blue: #0066B3;
-  --kb-blue-light: #E6F0FA;
-  --kb-blue-dark: #004C8C;
-  --kb-gray: #F8F9FA;
-  --kb-gray-light: #FFFFFF;
-  --kb-gray-dark: #495057;
-  --kb-text-primary: #1A1A1A;
-  --kb-text-secondary: #666666;
-  --kb-text-light: #999999;
-  --kb-border: #E1E5E9;
-  --kb-shadow: rgba(0, 0, 0, 0.08);
-  --kb-shadow-hover: rgba(0, 0, 0, 0.12);
-  --success-color: #28A745;
-  --error-color: #DC3545;
-  --warning-color: #FFC107;
+  /* KB Main Colors */
+  --kb-yellow-positive: #FFBC00;  /* KB Yellow Positive - R255 G188 B0 */
+  --kb-yellow-negative: #FFCC00;  /* KB Yellow Negative - R255 G204 B0 */
+  --kb-gray: #605850;             /* KB Gray - R96 G88 B76 */
+  
+  /* KB Sub Colors */
+  --kb-dark-gray: #545049;        /* KB Dark Gray - R84 G80 B69 */
+  --kb-gold: #B8860B;             /* KB Gold (추정) */
+  --kb-silver: #C0C0C0;           /* KB Silver (추정) */
+  
+  /* Derived Colors */
+  --primary: var(--kb-yellow-positive);
+  --primary-light: #FFF4D6;
+  --primary-dark: #E6A600;
+  --secondary: var(--kb-yellow-negative);
+  --secondary-light: #FFF8E1;
+  --accent: var(--kb-gray);
+  --accent-light: #F5F4F2;
+  --success: #4CAF50;
+  --warning: var(--kb-yellow-negative);
+  --danger: #F44336;
+  
+  /* Gray Scale */
+  --gray-50: #FAFAFA;
+  --gray-100: #F5F5F5;
+  --gray-200: #EEEEEE;
+  --gray-300: #E0E0E0;
+  --gray-400: #BDBDBD;
+  --gray-500: #9E9E9E;
+  --gray-600: #757575;
+  --gray-700: #616161;
+  --gray-800: #424242;
+  --gray-900: #212121;
+  
+  --white: #FFFFFF;
+  --black: #000000;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
 }
 
 * {
@@ -561,25 +592,27 @@ const formatNumber = (num) => {
 
 .practice-page {
   min-height: 100vh;
-  background: var(--kb-gray);
+  background: var(--gray-50);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: var(--kb-text-primary);
+  color: var(--gray-800);
+  line-height: 1.6;
 }
 
-/* 네비게이션 */
+/* 네비게이션 - TOSS 스타일 */
 .navbar {
-  background: var(--kb-gray-light);
-  border-bottom: 3px solid var(--kb-orange);
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
 }
 
 .nav-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 16px 24px;
+  padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -592,109 +625,149 @@ const formatNumber = (num) => {
 }
 
 .back-btn {
-  background: var(--kb-orange);
-  border: none;
-  padding: 8px;
-  border-radius: 50%;
+  background: linear-gradient(135deg, var(--white) 0%, var(--gray-100) 100%);
+  border: 1px solid var(--gray-200);
+  padding: 12px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.back-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 16px;
 }
 
 .back-btn:hover {
-  background: var(--kb-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--kb-yellow-positive);
+}
+
+.back-btn:hover::before {
+  opacity: 0.1;
 }
 
 .back-icon {
-  font-size: 20px;
-  color: var(--kb-gray-light);
-  font-weight: bold;
+  font-size: 18px;
+  color: var(--gray-700);
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover .back-icon {
+  color: var(--kb-yellow-positive);
+  transform: translateX(-2px);
 }
 
 .logo-icon {
-  font-size: 28px;
-  color: var(--kb-orange);
+  font-size: 32px;
+  color: var(--kb-yellow-positive);
 }
 
 .logo-text {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--kb-orange);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--kb-gray);
+  letter-spacing: -0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .practice-indicator {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--warning-color);
-  color: var(--kb-text-primary);
+  background: var(--warning);
+  color: var(--gray-800);
   padding: 8px 12px;
   border-radius: 20px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .help-btn {
-  background: var(--kb-blue);
-  color: var(--kb-gray-light);
+  background: var(--gray-200);
+  color: var(--gray-600);
   border: none;
   padding: 10px 16px;
   border-radius: 20px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .help-btn:hover {
-  background: var(--kb-blue-dark);
+  background: var(--gray-300);
 }
 
 /* 메인 콘텐츠 */
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 /* 연습 모드 안내 */
 .practice-notice {
-  background: var(--kb-blue-light);
-  border-radius: 16px;
-  padding: 24px;
-  border-left: 4px solid var(--kb-blue);
+  background: var(--primary-light);
+  border-radius: 12px;
+  padding: 12px;
+  border-left: 4px solid var(--kb-yellow-positive);
 }
 
 .notice-card {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .notice-icon {
-  font-size: 48px;
+  font-size: 32px;
 }
 
 .notice-content h3 {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
-  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
 }
 
 .notice-content p {
-  font-size: 16px;
-  color: var(--kb-text-secondary);
-  font-weight: 600;
+  font-size: 14px;
+  color: var(--gray-600);
+  font-weight: 500;
   line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 /* 섹션 헤더 */
@@ -702,66 +775,74 @@ const formatNumber = (num) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 16px 20px;
-  background: var(--kb-gray-light);
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: var(--white);
   border-radius: 12px;
-  border-left: 4px solid var(--kb-orange);
-  box-shadow: 0 2px 8px var(--kb-shadow);
+  border-left: 4px solid var(--kb-yellow-positive);
+  box-shadow: var(--shadow);
 }
 
 .section-header h2 {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--kb-text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--kb-gray);
+  letter-spacing: -0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .section-header p {
-  font-size: 16px;
-  color: var(--kb-text-secondary);
-  font-weight: 600;
+  font-size: 14px;
+  color: var(--gray-600);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .practice-badge {
-  background: var(--warning-color);
-  color: var(--kb-text-primary);
+  background: var(--warning);
+  color: var(--gray-800);
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 /* 연습 계좌 */
 .practice-accounts {
-  background: var(--kb-gray-light);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 16px var(--kb-shadow);
+  background: var(--white);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
 }
 
 .account-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .account-card {
-  background: var(--kb-gray);
-  border-radius: 16px;
-  padding: 24px;
-  border: 2px solid var(--kb-border);
+  background: var(--gray-50);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid var(--gray-200);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow);
 }
 
 .account-card:hover {
-  box-shadow: 0 6px 20px var(--kb-shadow-hover);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .account-card.selected {
-  border-color: var(--kb-orange);
-  background: var(--kb-orange-light);
+  border-color: var(--kb-yellow-positive);
+  background: var(--primary-light);
 }
 
 .account-header {
@@ -788,15 +869,19 @@ const formatNumber = (num) => {
 }
 
 .bank-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-800);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
 }
 
 .account-type {
   font-size: 14px;
-  color: var(--kb-text-secondary);
-  font-weight: 600;
+  color: var(--gray-600);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .practice-indicator {
@@ -813,17 +898,20 @@ const formatNumber = (num) => {
 }
 
 .account-number {
-  font-size: 16px;
-  color: var(--kb-text-primary);
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
-  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--gray-600);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 500;
+  margin-bottom: 2px;
+  letter-spacing: 0.5px;
 }
 
 .account-name {
-  font-size: 14px;
-  color: var(--kb-text-secondary);
-  font-weight: 600;
+  font-size: 12px;
+  color: var(--gray-500);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .balance-section {
@@ -831,7 +919,7 @@ const formatNumber = (num) => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: var(--kb-gray-light);
+  background: var(--white);
   border-radius: 12px;
 }
 
@@ -848,44 +936,50 @@ const formatNumber = (num) => {
 }
 
 .balance-amount {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--kb-orange);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--kb-yellow-positive);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.3px;
 }
 
 /* 연습 기능 */
 .practice-features {
-  background: var(--kb-gray-light);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 16px var(--kb-shadow);
+  background: var(--white);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
 }
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
 }
 
 .feature-card {
-  background: var(--kb-gray);
-  border-radius: 16px;
-  padding: 24px;
+  background: var(--white);
+  border-radius: 12px;
+  padding: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow);
 }
 
 .feature-card:hover {
-  background: var(--kb-orange-light);
+  background: var(--primary-light);
+  border-color: var(--kb-yellow-positive);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--kb-shadow-hover);
+  box-shadow: var(--shadow-lg);
 }
 
 .feature-icon {
-  font-size: 48px;
+  font-size: 32px;
   text-align: center;
 }
 
@@ -894,18 +988,22 @@ const formatNumber = (num) => {
 }
 
 .feature-content h3 {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--gray-800);
   margin-bottom: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
 }
 
 .feature-content p {
   font-size: 14px;
-  color: var(--kb-text-secondary);
-  font-weight: 600;
+  color: var(--gray-600);
+  font-weight: 500;
   margin-bottom: 12px;
   line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .feature-difficulty {
@@ -917,8 +1015,10 @@ const formatNumber = (num) => {
 
 .difficulty-label {
   font-size: 12px;
-  color: var(--kb-text-light);
-  font-weight: 600;
+  color: var(--gray-500);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .difficulty-stars {
@@ -926,25 +1026,30 @@ const formatNumber = (num) => {
 }
 
 .feature-btn {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
+  background: var(--kb-yellow-positive);
+  color: var(--white);
   border: none;
   padding: 12px 24px;
-  border-radius: 25px;
+  border-radius: 20px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
+  box-shadow: var(--shadow);
 }
 
 .feature-btn:hover {
-  background: var(--kb-orange-dark);
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 /* 연습 세션 */
 .practice-session {
-  background: var(--kb-gray-light);
+  background: var(--white);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 4px 16px var(--kb-shadow);
@@ -1109,7 +1214,7 @@ const formatNumber = (num) => {
 }
 
 .interaction-step {
-  background: var(--kb-gray-light);
+  background: var(--white);
   padding: 24px;
   border-radius: 12px;
 }
@@ -1153,7 +1258,7 @@ const formatNumber = (num) => {
 }
 
 .demo-step {
-  background: var(--kb-gray-light);
+  background: var(--white);
   padding: 24px;
   border-radius: 12px;
 }
@@ -1226,7 +1331,7 @@ const formatNumber = (num) => {
 }
 
 .prev-btn {
-  background: var(--kb-gray-light);
+  background: var(--white);
   color: var(--kb-text-primary);
   border: 2px solid var(--kb-border);
 }
@@ -1247,7 +1352,7 @@ const formatNumber = (num) => {
 
 /* 연습 완료 */
 .practice-complete {
-  background: var(--kb-gray-light);
+  background: var(--white);
   border-radius: 16px;
   padding: 48px 24px;
   text-align: center;
@@ -1334,7 +1439,7 @@ const formatNumber = (num) => {
 }
 
 .btn-secondary {
-  background: var(--kb-gray-light);
+  background: var(--white);
   color: var(--kb-text-primary);
   border: 2px solid var(--kb-border);
 }

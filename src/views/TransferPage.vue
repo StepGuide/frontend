@@ -7,7 +7,6 @@
           <button class="back-btn" @click="goBack">
             <span class="back-icon">←</span>
           </button>
-          <span class="logo-icon">🏦</span>
           <span class="logo-text">이체하기</span>
         </div>
         <div class="nav-actions">
@@ -311,26 +310,59 @@ const requestHelp = () => {
 </script>
 
 <style scoped>
-/* CSS 변수 정의 */
+/* CSS 변수 정의 - KB국민은행 공식 브랜드 컬러 */
 .transfer-page {
-  --kb-yellow: #FFD700;
-  --kb-orange: #FF8C00;
-  --kb-orange-light: #FFE4B3;
-  --kb-orange-dark: #E67300;
-  --kb-blue: #0066B3;
-  --kb-blue-light: #E6F0FA;
-  --kb-blue-dark: #004C8C;
-  --kb-gray: #F8F9FA;
-  --kb-gray-light: #FFFFFF;
-  --kb-gray-dark: #495057;
-  --kb-text-primary: #1A1A1A;
-  --kb-text-secondary: #666666;
-  --kb-text-light: #999999;
-  --kb-border: #E1E5E9;
-  --kb-shadow: rgba(0, 0, 0, 0.08);
-  --kb-shadow-hover: rgba(0, 0, 0, 0.12);
-  --success-color: #28A745;
-  --error-color: #DC3545;
+  /* KB Main Colors */
+  --kb-yellow-positive: #FFBC00;  /* KB Yellow Positive - R255 G188 B0 */
+  --kb-yellow-negative: #FFCC00;  /* KB Yellow Negative - R255 G204 B0 */
+  --kb-gray: #605850;             /* KB Gray - R96 G88 B76 */
+  
+  /* KB Sub Colors */
+  --kb-dark-gray: #545049;        /* KB Dark Gray - R84 G80 B69 */
+  --kb-gold: #B8860B;             /* KB Gold (추정) */
+  --kb-silver: #C0C0C0;           /* KB Silver (추정) */
+  
+  /* Derived Colors */
+  --primary: var(--kb-yellow-positive);
+  --primary-light: #FFF4D6;
+  --primary-dark: #E6A600;
+  --secondary: var(--kb-yellow-negative);
+  --secondary-light: #FFF8E1;
+  --accent: var(--kb-gray);
+  --accent-light: #F5F4F2;
+  --success: #4CAF50;
+  --warning: var(--kb-yellow-negative);
+  --danger: #F44336;
+  
+  /* Gray Scale */
+  --gray-50: #FAFAFA;
+  --gray-100: #F5F5F5;
+  --gray-200: #EEEEEE;
+  --gray-300: #E0E0E0;
+  --gray-400: #BDBDBD;
+  --gray-500: #9E9E9E;
+  --gray-600: #757575;
+  --gray-700: #616161;
+  --gray-800: #424242;
+  --gray-900: #212121;
+  
+  --white: #FFFFFF;
+  --black: #000000;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
 }
 
 * {
@@ -341,19 +373,21 @@ const requestHelp = () => {
 
 .transfer-page {
   min-height: 100vh;
-  background: var(--kb-gray);
+  background: var(--gray-50);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: var(--kb-text-primary);
+  color: var(--gray-800);
+  line-height: 1.6;
 }
 
-/* 네비게이션 */
+/* 네비게이션 - TOSS 스타일 */
 .navbar {
-  background: var(--kb-gray-light);
-  border-bottom: 3px solid var(--kb-orange);
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
 }
 
 .nav-content {
@@ -372,36 +406,68 @@ const requestHelp = () => {
 }
 
 .back-btn {
-  background: var(--kb-orange);
-  border: none;
-  padding: 8px;
-  border-radius: 50%;
+  background: linear-gradient(135deg, var(--white) 0%, var(--gray-100) 100%);
+  border: 1px solid var(--gray-200);
+  padding: 12px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.back-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 16px;
 }
 
 .back-btn:hover {
-  background: var(--kb-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--kb-yellow-positive);
+}
+
+.back-btn:hover::before {
+  opacity: 0.1;
 }
 
 .back-icon {
-  font-size: 20px;
-  color: var(--kb-gray-light);
-  font-weight: bold;
+  font-size: 18px;
+  color: var(--gray-700);
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover .back-icon {
+  color: var(--kb-yellow-positive);
+  transform: translateX(-2px);
 }
 
 .logo-icon {
-  font-size: 28px;
-  color: var(--kb-orange);
+  font-size: 32px;
+  color: var(--kb-yellow-positive);
 }
 
 .logo-text {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--kb-orange);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--kb-gray);
+  letter-spacing: -0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .help-btn {
@@ -427,7 +493,7 @@ const requestHelp = () => {
 .main-content {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 16px;
 }
 
 /* 단계 표시기 */
@@ -435,11 +501,11 @@ const requestHelp = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 32px;
-  padding: 20px;
-  background: var(--kb-gray-light);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px var(--kb-shadow);
+  margin-bottom: 20px;
+  padding: 12px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
 }
 
 .step {
@@ -450,49 +516,53 @@ const requestHelp = () => {
 }
 
 .step-number {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--kb-border);
-  color: var(--kb-text-light);
+  background: var(--gray-300);
+  color: var(--gray-500);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 14px;
   transition: all 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
 }
 
 .step.active .step-number {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
+  background: var(--kb-yellow-positive);
+  color: var(--white);
 }
 
 .step.completed .step-number {
-  background: var(--success-color);
-  color: var(--kb-gray-light);
+  background: var(--success);
+  color: var(--white);
 }
 
 .step-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--kb-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-600);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .step.active .step-text {
-  color: var(--kb-orange);
+  color: var(--kb-yellow-positive);
 }
 
 .step-line {
-  width: 60px;
+  width: 40px;
   height: 2px;
-  background: var(--kb-border);
-  margin: 0 20px;
+  background: var(--gray-300);
+  margin: 0 12px;
   transition: all 0.3s ease;
 }
 
 .step-line.active {
-  background: var(--kb-orange);
+  background: var(--kb-yellow-positive);
 }
 
 /* 단계 콘텐츠 */
@@ -505,49 +575,67 @@ const requestHelp = () => {
 
 .section-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
 }
 
 .section-header h2 {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--kb-text-primary);
-  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--kb-gray);
+  margin-bottom: 4px;
+  letter-spacing: -0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .section-header p {
-  font-size: 16px;
-  color: var(--kb-text-secondary);
-  font-weight: 600;
+  font-size: 14px;
+  color: var(--gray-600);
+  font-weight: 500;
+  line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 /* 계좌 목록 */
 .account-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .account-item {
   display: flex;
   align-items: center;
-  padding: 20px;
-  border: 2px solid var(--kb-border);
+  padding: 16px;
+  border: 2px solid var(--gray-200);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: var(--kb-gray-light);
+  background: var(--white);
+  box-shadow: var(--shadow);
 }
 
 .account-item:hover {
-  border-color: var(--kb-orange);
-  box-shadow: 0 4px 12px var(--kb-shadow-hover);
+  border-color: var(--kb-yellow-positive);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }
 
 .account-item.selected {
-  border-color: var(--kb-orange);
-  background: var(--kb-orange-light);
+  border-color: var(--kb-yellow-positive);
+  background: var(--primary-light);
+  box-shadow: var(--shadow-lg);
+}
+
+.account-item.selected .select-indicator {
+  background: var(--kb-yellow-positive);
+  color: var(--white);
 }
 
 .account-info {
@@ -555,96 +643,144 @@ const requestHelp = () => {
 }
 
 .bank-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
-  margin-bottom: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
 }
 
 .account-number {
-  font-size: 16px;
-  color: var(--kb-text-secondary);
-  font-family: 'Courier New', monospace;
-  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--gray-600);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  margin-bottom: 2px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 .account-name {
-  font-size: 14px;
-  color: var(--kb-text-light);
-  font-weight: 600;
+  font-size: 12px;
+  color: var(--gray-500);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .balance {
   text-align: right;
-  margin-right: 16px;
+  margin-right: 12px;
 }
 
 .balance-amount {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--kb-orange);
-  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--kb-yellow-positive);
+  margin-bottom: 2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.3px;
 }
 
 .balance-label {
-  font-size: 12px;
-  color: var(--kb-text-light);
-  font-weight: 600;
+  font-size: 11px;
+  color: var(--gray-500);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .select-indicator {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  background: var(--gray-300);
+  color: var(--gray-500);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .check-icon {
-  color: var(--success-color);
-  font-size: 20px;
-  font-weight: bold;
+  color: var(--success);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 폼 스타일 */
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
 .form-group label {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: 2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .form-input {
-  padding: 16px;
-  border: 2px solid var(--kb-border);
-  border-radius: 12px;
-  font-size: 16px;
+  padding: 12px;
+  border: 2px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
   transition: all 0.2s ease;
-  background: var(--kb-gray-light);
+  background: var(--white);
+  color: var(--gray-800);
+  box-shadow: var(--shadow-sm);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
+}
+
+.form-input select {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.1px;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--kb-orange);
-  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+  border-color: var(--kb-yellow-positive);
+  box-shadow: 0 0 0 3px rgba(255, 188, 0, 0.1), var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.form-input:hover {
+  border-color: var(--gray-300);
+  box-shadow: var(--shadow);
 }
 
 .amount-input-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  padding: 12px;
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
 }
 
 .amount-input {
@@ -652,146 +788,186 @@ const requestHelp = () => {
 }
 
 .currency {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--kb-yellow-positive);
+  padding: 6px 10px;
+  background: var(--primary-light);
+  border-radius: 6px;
+  border: 1px solid var(--kb-yellow-positive);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
 }
 
 .amount-display {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--kb-orange);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--kb-yellow-positive);
   text-align: center;
-  padding: 16px;
-  background: var(--kb-orange-light);
-  border-radius: 12px;
-  margin-top: 8px;
+  padding: 12px;
+  background: var(--primary-light);
+  border-radius: 8px;
+  margin-top: 4px;
+  border: 1px solid var(--kb-yellow-positive);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.3px;
 }
 
 /* 확인 카드 */
 .confirmation-card {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
 }
 
 .confirmation-section {
-  padding: 24px;
-  background: var(--kb-gray);
-  border-radius: 12px;
-  border-left: 4px solid var(--kb-orange);
+  padding: 16px;
+  background: var(--gray-50);
+  border-radius: 8px;
+  border-left: 4px solid var(--kb-yellow-positive);
+  margin-bottom: 12px;
 }
 
 .confirmation-section h3 {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
-  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--kb-gray);
+  margin-bottom: 12px;
+  letter-spacing: -0.2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .account-detail {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .transfer-detail {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
 }
 
 .detail-row .label {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--kb-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .detail-row .value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .detail-row .value.amount {
-  color: var(--kb-orange);
-  font-size: 20px;
+  color: var(--kb-yellow-positive);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 /* 버튼 */
 .action-buttons {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   justify-content: center;
+  margin-top: 16px;
 }
 
 .btn-primary, .btn-secondary {
-  padding: 16px 32px;
-  border-radius: 25px;
-  font-size: 16px;
-  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
-  min-width: 120px;
+  min-width: 100px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
 }
 
 .btn-primary {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
+  background: var(--kb-yellow-positive);
+  color: var(--white);
+  box-shadow: var(--shadow);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--kb-orange-dark);
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:disabled {
-  background: var(--kb-border);
-  color: var(--kb-text-light);
+  background: var(--gray-300);
+  color: var(--gray-500);
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {
-  background: var(--kb-gray-light);
-  color: var(--kb-text-primary);
-  border: 2px solid var(--kb-border);
+  background: var(--white);
+  color: var(--gray-800);
+  border: 2px solid var(--gray-300);
+  box-shadow: var(--shadow);
 }
 
 .btn-secondary:hover {
-  background: var(--kb-gray);
-  border-color: var(--kb-text-light);
+  background: var(--gray-100);
+  border-color: var(--gray-400);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .main-content {
-    padding: 16px;
+    padding: 12px;
   }
   
   .step-content {
-    padding: 24px;
-  }
-  
-  .step-indicator {
     padding: 16px;
   }
   
+  .step-indicator {
+    padding: 8px;
+  }
+  
   .step-line {
-    width: 40px;
-    margin: 0 10px;
+    width: 30px;
+    margin: 0 8px;
   }
   
   .account-item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 8px;
+    padding: 12px;
   }
   
   .balance {
@@ -801,10 +977,28 @@ const requestHelp = () => {
   
   .action-buttons {
     flex-direction: column;
+    gap: 8px;
   }
   
   .btn-primary, .btn-secondary {
     width: 100%;
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+  
+  .section-header {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .form-section {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .confirmation-card {
+    padding: 12px;
+    gap: 12px;
   }
 }
 </style>
