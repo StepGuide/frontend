@@ -1,11 +1,23 @@
 <template>
   <div class="account-favorites-page">
-    <!-- 헤더 -->
-    <header class="page-header">
-      <button @click="goBack" class="back-btn">←</button>
-      <h1>계좌 즐겨찾기</h1>
-      <button @click="showAddModal = true" class="add-btn">+</button>
-    </header>
+    <!-- 상단 네비게이션 -->
+    <nav class="navbar">
+      <div class="nav-content">
+        <div class="logo">
+          <button class="back-btn" @click="goBack">
+            <span class="back-icon">←</span>
+          </button>
+
+          <span class="logo-text">계좌 즐겨찾기</span>
+        </div>
+        <div class="nav-actions">
+          <button class="help-btn" @click="showAddModal = true">
+            <span class="help-icon">+</span>
+            <span class="help-text">추가</span>
+          </button>
+        </div>
+      </div>
+    </nav>
 
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
@@ -85,26 +97,57 @@
     <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <h3>계좌 즐겨찾기 추가</h3>
-          <button @click="showAddModal = false" class="close-btn">×</button>
+          <div class="modal-title-section">
+            <h3>계좌 즐겨찾기 추가</h3>
+            <p>새로운 계좌를 즐겨찾기에 추가하세요</p>
+          </div>
+          <button @click="showAddModal = false" class="close-btn">
+            <span class="close-icon">×</span>
+          </button>
         </div>
         <div class="modal-body">
-          <div class="form-group">
-            <label>계좌명</label>
-            <input v-model="newAccount.name" type="text" placeholder="계좌명을 입력하세요">
-          </div>
-          <div class="form-group">
-            <label>계좌번호</label>
-            <input v-model="newAccount.accountNumber" type="text" placeholder="계좌번호를 입력하세요">
-          </div>
-          <div class="form-group">
-            <label>잔액</label>
-            <input v-model="newAccount.balance" type="number" placeholder="잔액을 입력하세요">
+          <div class="form-container">
+            <div class="form-group">
+              <label class="form-label">계좌명</label>
+              <div class="input-wrapper">
+                <input 
+                  v-model="newAccount.name" 
+                  type="text" 
+                  placeholder="예: KB국민주거래통장"
+                  class="form-input"
+                >
+                <div class="input-focus-border"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">계좌번호</label>
+              <div class="input-wrapper">
+                <input 
+                  v-model="newAccount.accountNumber" 
+                  type="text" 
+                  placeholder="예: 123-456-789012"
+                  class="form-input"
+                >
+                <div class="input-focus-border"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">잔액</label>
+              <div class="input-wrapper">
+                <input 
+                  v-model="newAccount.balance" 
+                  type="number" 
+                  placeholder="예: 1000000"
+                  class="form-input"
+                >
+                <div class="input-focus-border"></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
           <button @click="showAddModal = false" class="cancel-btn">취소</button>
-          <button @click="addNewAccount" class="confirm-btn">추가</button>
+          <button @click="addNewAccount" class="confirm-btn">추가하기</button>
         </div>
       </div>
     </div>
@@ -204,22 +247,57 @@ const saveFavorites = () => {
 <style scoped>
 /* CSS 변수 정의 - MainPage와 동일한 KB 브랜드 색상 */
 .account-favorites-page {
-  --kb-yellow: #FFD700;
-  --kb-orange: #FF8C00;
-  --kb-orange-light: #FFE4B3;
-  --kb-orange-dark: #E67300;
-  --kb-blue: #0066B3;
-  --kb-blue-light: #E6F0FA;
-  --kb-blue-dark: #004C8C;
-  --kb-gray: #F8F9FA;
-  --kb-gray-light: #FFFFFF;
-  --kb-gray-dark: #495057;
-  --kb-text-primary: #1A1A1A;
-  --kb-text-secondary: #666666;
-  --kb-text-light: #999999;
-  --kb-border: #E1E5E9;
-  --kb-shadow: rgba(0, 0, 0, 0.08);
-  --kb-shadow-hover: rgba(0, 0, 0, 0.12);
+  /* KB Main Colors */
+  --kb-yellow-positive: #FFBC00;  /* KB Yellow Positive - R255 G188 B0 */
+  --kb-yellow-negative: #FFCC00;  /* KB Yellow Negative - R255 G204 B0 */
+  --kb-gray: #605850;             /* KB Gray - R96 G88 B76 */
+  
+  /* KB Sub Colors */
+  --kb-dark-gray: #545049;        /* KB Dark Gray - R84 G80 B69 */
+  --kb-gold: #B8860B;             /* KB Gold (추정) */
+  --kb-silver: #C0C0C0;           /* KB Silver (추정) */
+  
+  /* Derived Colors */
+  --primary: var(--kb-yellow-positive);
+  --primary-light: #FFF4D6;
+  --primary-dark: #E6A600;
+  --secondary: var(--kb-yellow-negative);
+  --secondary-light: #FFF8E1;
+  --accent: var(--kb-gray);
+  --accent-light: #F5F4F2;
+  --success: #4CAF50;
+  --warning: var(--kb-yellow-negative);
+  --danger: #F44336;
+  
+  /* Gray Scale */
+  --gray-50: #FAFAFA;
+  --gray-100: #F5F5F5;
+  --gray-200: #EEEEEE;
+  --gray-300: #E0E0E0;
+  --gray-400: #BDBDBD;
+  --gray-500: #9E9E9E;
+  --gray-600: #757575;
+  --gray-700: #616161;
+  --gray-800: #424242;
+  --gray-900: #212121;
+  
+  --white: #FFFFFF;
+  --black: #000000;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
 }
 
 * {
@@ -230,203 +308,277 @@ const saveFavorites = () => {
 
 .account-favorites-page {
   min-height: 100vh;
-  background: var(--kb-gray);
+  background: var(--gray-50);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: var(--kb-text-primary);
+  color: var(--gray-800);
+  line-height: 1.6;
 }
 
-/* 헤더 - MainPage 네비게이션 스타일 적용 */
-.page-header {
-  background: var(--kb-gray-light);
-  border-bottom: 3px solid var(--kb-orange);
+/* 네비게이션 - MainPage 스타일 */
+.navbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
+}
+
+.nav-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
+  gap: 12px;
 }
 
 .back-btn {
-  background: var(--kb-orange);
-  border: none;
-  color: var(--kb-gray-light);
-  font-size: 20px;
+  background: linear-gradient(135deg, var(--white) 0%, var(--gray-100) 100%);
+  border: 1px solid var(--gray-200);
+  padding: 12px;
+  border-radius: 16px;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.back-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 16px;
 }
 
 .back-btn:hover {
-  background: var(--kb-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--kb-yellow-positive);
 }
 
-.page-header h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--kb-orange);
+.back-btn:hover::before {
+  opacity: 0.1;
 }
 
-.add-btn {
-  background: var(--kb-orange);
+.back-icon {
+  font-size: 18px;
+  color: var(--gray-700);
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover .back-icon {
+  color: var(--kb-yellow-positive);
+  transform: translateX(-2px);
+}
+
+.logo-icon {
+  font-size: 32px;
+  color: var(--kb-yellow-positive);
+}
+
+.logo-text {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--kb-gray);
+  letter-spacing: -0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.help-btn {
+  background: var(--gray-200);
+  color: var(--gray-600);
   border: none;
-  color: var(--kb-gray-light);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  font-size: 20px;
+  padding: 14px 20px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
-.add-btn:hover {
-  background: var(--kb-orange-dark);
+.help-btn:hover {
+  background: var(--gray-300);
+}
+
+.help-icon {
+  font-size: 18px;
+  color: var(--gray-600);
+}
+
+.help-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--gray-600);
 }
 
 /* 메인 콘텐츠 */
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.favorites-section,
-.my-accounts-section {
-  margin-bottom: 24px;
-}
-
-/* 섹션 헤더 - MainPage 스타일 적용 */
+/* 섹션 헤더 - MainPage 스타일 */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 12px 16px;
-  background: var(--kb-gray-light);
-  border-radius: 12px;
-  border-left: 4px solid var(--kb-orange);
-  box-shadow: 0 2px 8px var(--kb-shadow);
+  margin-bottom: 32px;
+  padding: 0;
 }
 
 .section-header h2 {
-  margin: 0;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
-  color: var(--kb-text-primary);
+  color: var(--kb-gray);
+  letter-spacing: -0.5px;
 }
 
 .count {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 700;
+  background: var(--primary-light);
+  color: var(--kb-yellow-positive);
+  padding: 8px 16px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.1px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 즐겨찾기 섹션 */
+.favorites-section,
+.my-accounts-section {
+  margin-bottom: 16px;
 }
 
 /* 빈 상태 */
 .empty-state {
   text-align: center;
-  padding: 3rem 1rem;
-  background: var(--kb-gray-light);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px var(--kb-shadow);
-  border: 1px solid var(--kb-border);
+  padding: 20px;
+  color: var(--gray-600);
 }
 
 .empty-icon {
   font-size: 48px;
-  margin-bottom: 16px;
-  color: var(--kb-orange);
+  margin-bottom: 12px;
 }
 
 .empty-state p {
-  margin: 0 0 16px 0;
-  color: var(--kb-text-secondary);
   font-size: 16px;
-  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--gray-600);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .add-first-btn {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
+  background: var(--kb-yellow-positive);
+  color: var(--white);
   border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
-  font-size: 16px;
-  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  letter-spacing: -0.2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  box-shadow: var(--shadow);
 }
 
 .add-first-btn:hover {
-  background: var(--kb-orange-dark);
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 /* 계좌 목록 */
 .favorites-list,
 .accounts-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
 }
 
 .favorite-card,
 .account-card {
-  background: var(--kb-gray-light);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 4px 16px var(--kb-shadow);
-  border: 1px solid var(--kb-border);
-  transition: all 0.2s ease;
+  background: var(--white);
+  border-radius: var(--radius-2xl);
+  padding: 16px;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .favorite-card:hover,
 .account-card:hover {
-  box-shadow: 0 6px 20px var(--kb-shadow-hover);
-}
-
-.favorite-card {
-  border-left: 4px solid var(--kb-orange);
-}
-
-.account-card {
-  border-left: 4px solid var(--kb-blue);
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-4px);
 }
 
 .account-info {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .account-name {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--kb-text-primary);
-  margin-bottom: 8px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
 }
 
 .account-number {
-  font-size: 16px;
-  color: var(--kb-text-secondary);
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
+  font-size: 18px;
+  color: var(--gray-600);
   margin-bottom: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
+  font-weight: 500;
 }
 
 .account-balance {
   font-size: 24px;
-  font-weight: 800;
-  color: var(--kb-orange);
+  font-weight: 700;
+  color: var(--gray-800);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.3px;
 }
 
 .account-actions {
@@ -436,35 +588,47 @@ const saveFavorites = () => {
 }
 
 .action-btn {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
+  padding: 10px 16px;
   border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
+  border-radius: 8px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  letter-spacing: -0.1px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn.transfer {
-  background: var(--kb-blue);
+  background: var(--kb-yellow-positive);
+  color: var(--white);
 }
 
 .action-btn.details {
-  background: var(--kb-orange);
+  background: #605850;
+  color: var(--white);
 }
 
 .action-btn.remove {
-  background: #DC3545;
+  background: var(--danger);
+  color: var(--white);
 }
 
 .action-btn:hover {
-  background: var(--kb-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .action-btn.transfer:hover {
-  background: var(--kb-blue-dark);
+  background: var(--primary-dark);
+}
+
+.action-btn.details:hover {
+  background: #4a433c;
 }
 
 .action-btn.remove:hover {
@@ -472,155 +636,328 @@ const saveFavorites = () => {
 }
 
 .favorite-btn {
-  background: var(--kb-yellow);
+  background: var(--kb-yellow-positive);
+  color: var(--white);
   border: none;
-  color: var(--kb-text-primary);
-  padding: 10px 20px;
-  border-radius: 20px;
+  padding: 10px 16px;
+  border-radius: 8px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  letter-spacing: -0.1px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .favorite-btn.added {
-  background: #28a745;
-  color: var(--kb-gray-light);
+  background: var(--gray-400);
+  color: var(--white);
 }
 
 .favorite-btn:hover {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .favorite-btn.added:hover {
   background: #218838;
 }
 
-/* 모달 */
+
+/* 빈 상태 */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: var(--white);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--gray-200);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: var(--kb-yellow-positive);
+}
+
+.empty-state p {
+  margin: 0 0 16px 0;
+  color: var(--gray-600);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.add-first-btn {
+  background: var(--kb-yellow-positive);
+  color: var(--white);
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius-xl);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow);
+}
+
+.add-first-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+
+/* 현대적인 모달 디자인 */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal {
-  background: var(--kb-gray-light);
-  border-radius: 16px;
+  background: var(--white);
+  border-radius: 24px;
   width: 90%;
-  max-width: 400px;
-  color: var(--kb-text-primary);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 480px;
+  color: var(--gray-800);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
 }
 
 .modal-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--kb-border);
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
-  border-radius: 16px 16px 0 0;
+  padding: 24px 24px 0 24px;
+  background: var(--white);
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 20px;
+.modal-title-section {
+  flex: 1;
+}
+
+.modal-title-section h3 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
   font-weight: 700;
+  color: var(--gray-800);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.modal-title-section p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gray-600);
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .close-btn {
-  background: none;
+  background: var(--gray-100);
   border: none;
-  font-size: 24px;
   cursor: pointer;
-  color: var(--kb-gray-light);
-  padding: 4px;
-  border-radius: 50%;
-  transition: background-color 0.2s;
+  color: var(--gray-600);
+  padding: 12px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+.close-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gray-200);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 12px;
+}
+
+.close-btn:hover::before {
+  opacity: 1;
+}
+
+.close-icon {
+  font-size: 18px;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
 }
 
 .modal-body {
   padding: 24px;
 }
 
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .form-group {
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.form-group label {
+.form-label {
   display: block;
-  margin-bottom: 8px;
   font-weight: 600;
-  color: var(--kb-text-primary);
-  font-size: 14px;
+  color: var(--gray-700);
+  font-size: 16px;
+  margin: 0;
 }
 
-.form-group input {
+.input-wrapper {
+  position: relative;
+}
+
+.form-input {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--kb-border);
-  border-radius: 8px;
+  padding: 16px 20px;
+  border: 2px solid var(--gray-200);
+  border-radius: 12px;
   font-size: 16px;
   box-sizing: border-box;
-  transition: border-color 0.2s;
+  transition: all 0.3s ease;
+  background: var(--white);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
-.form-group input:focus {
+.form-input:focus {
   outline: none;
-  border-color: var(--kb-orange);
-  box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.2);
+  border-color: var(--kb-yellow-positive);
+  box-shadow: 0 0 0 4px rgba(255, 188, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-input::placeholder {
+  color: var(--gray-400);
+  font-weight: 400;
+}
+
+.input-focus-border {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+  border-radius: 1px;
+}
+
+.form-input:focus + .input-focus-border {
+  transform: scaleX(1);
 }
 
 .modal-footer {
   display: flex;
   gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid var(--kb-border);
+  padding: 0 24px 24px 24px;
 }
 
 .cancel-btn,
 .confirm-btn {
   flex: 1;
-  padding: 12px 20px;
+  padding: 16px 24px;
   border: none;
-  border-radius: 20px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: 700;
-  transition: all 0.2s ease;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: -0.2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .cancel-btn {
-  background: var(--kb-gray);
-  color: var(--kb-text-secondary);
-  border: 1px solid var(--kb-border);
-}
-
-.confirm-btn {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 2px solid var(--gray-200);
 }
 
 .cancel-btn:hover {
-  background: var(--kb-border);
+  background: var(--gray-200);
+  border-color: var(--gray-300);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+  box-shadow: 0 4px 12px rgba(255, 188, 0, 0.3);
 }
 
 .confirm-btn:hover {
-  background: var(--kb-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 188, 0, 0.4);
 }
+
+.confirm-btn:active {
+  transform: translateY(0);
+}
+
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
@@ -670,12 +1007,40 @@ const saveFavorites = () => {
   
   .modal {
     width: 95%;
+    max-width: 400px;
+    border-radius: 20px;
   }
   
-  .modal-header,
-  .modal-body,
+  .modal-header {
+    padding: 20px 20px 0 20px;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+  
   .modal-footer {
-    padding: 16px;
+    padding: 0 20px 20px 20px;
+  }
+  
+  .modal-title-section h3 {
+    font-size: 20px;
+  }
+  
+  .form-container {
+    gap: 16px;
+  }
+  
+  .form-input {
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+  
+  .cancel-btn,
+  .confirm-btn {
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 48px;
   }
 }
 </style>

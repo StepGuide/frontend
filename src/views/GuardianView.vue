@@ -191,26 +191,59 @@ const toggleMode = () => {
 
 
 <style scoped>
-/* CSS 변수 정의 */
+/* CSS 변수 정의 - KB국민은행 공식 브랜드 컬러 */
 .guardian-mode {
-  --kb-yellow: #FFD700;
-  --kb-orange: #FF8C00;
-  --kb-orange-light: #FFE4B3;
-  --kb-orange-dark: #E67300;
-  --kb-blue: #0066B3;
-  --kb-blue-light: #E6F0FA;
-  --kb-blue-dark: #004C8C;
-  --kb-gray: #F8F9FA;
-  --kb-gray-light: #FFFFFF;
-  --kb-gray-dark: #495057;
-  --kb-text-primary: #1A1A1A;
-  --kb-text-secondary: #666666;
-  --kb-text-light: #999999;
-  --kb-border: #E1E5E9;
-  --kb-shadow: rgba(0, 0, 0, 0.08);
-  --kb-shadow-hover: rgba(0, 0, 0, 0.12);
-  --kb-success: #28A745;
-  --kb-danger: #DC3545;
+  /* KB Main Colors */
+  --kb-yellow-positive: #FFBC00;  /* KB Yellow Positive - R255 G188 B0 */
+  --kb-yellow-negative: #FFCC00;  /* KB Yellow Negative - R255 G204 B0 */
+  --kb-gray: #605850;             /* KB Gray - R96 G88 B76 */
+  
+  /* KB Sub Colors */
+  --kb-dark-gray: #545049;        /* KB Dark Gray - R84 G80 B69 */
+  --kb-gold: #B8860B;             /* KB Gold (추정) */
+  --kb-silver: #C0C0C0;           /* KB Silver (추정) */
+  
+  /* Derived Colors */
+  --primary: var(--kb-yellow-positive);
+  --primary-light: #FFF4D6;
+  --primary-dark: #E6A600;
+  --secondary: var(--kb-yellow-negative);
+  --secondary-light: #FFF8E1;
+  --accent: var(--kb-gray);
+  --accent-light: #F5F4F2;
+  --success: #4CAF50;
+  --warning: var(--kb-yellow-negative);
+  --danger: #F44336;
+  
+  /* Gray Scale */
+  --gray-50: #FAFAFA;
+  --gray-100: #F5F5F5;
+  --gray-200: #EEEEEE;
+  --gray-300: #E0E0E0;
+  --gray-400: #BDBDBD;
+  --gray-500: #9E9E9E;
+  --gray-600: #757575;
+  --gray-700: #616161;
+  --gray-800: #424242;
+  --gray-900: #212121;
+  
+  --white: #FFFFFF;
+  --black: #000000;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
 }
 
 * {
@@ -221,25 +254,27 @@ const toggleMode = () => {
 
 .guardian-mode {
   min-height: 100vh;
-  background: var(--kb-gray);
+  background: var(--gray-50);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: var(--kb-text-primary);
+  color: var(--gray-800);
+  line-height: 1.6;
 }
 
-/* 네비게이션 */
+/* 네비게이션 - TOSS 스타일 */
 .navbar {
-  background: var(--kb-gray-light);
-  border-bottom: 3px solid var(--kb-orange);
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
 }
 
 .nav-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 16px 24px;
+  padding: 20px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -252,37 +287,46 @@ const toggleMode = () => {
 }
 
 .logo-icon {
-  font-size: 28px;
-  color: var(--kb-orange);
+  font-size: 32px;
+  color: var(--kb-yellow-positive);
 }
 
 .logo-text {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--kb-orange);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--kb-gray);
+  letter-spacing: -0.5px;
 }
 
 .mode-toggle-btn {
-  background: var(--kb-orange);
-  color: var(--kb-gray-light);
+  background: var(--kb-yellow-positive);
+  color: var(--white);
   border: none;
   padding: 12px 20px;
-  border-radius: 25px;
-  font-size: 16px;
-  font-weight: 700;
+  border-radius: var(--radius-xl);
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
+  box-shadow: var(--shadow);
 }
 
 .mode-toggle-btn:hover {
-  background: var(--kb-orange-dark);
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .toggle-icon {
   font-size: 18px;
+}
+
+.toggle-text {
+  font-size: 15px;
+  font-weight: 600;
 }
 
 /* 메인 콘텐츠 */
