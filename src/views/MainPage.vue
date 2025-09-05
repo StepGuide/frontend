@@ -74,11 +74,20 @@
             <!-- 코드가 생성된 상태 -->
             <div v-else class="generated-code-section">
               <div class="success-header">
-                <div class="success-icon">✅</div>
-                <h4>도움 요청 코드가 생성되었습니다</h4>
+
               </div>
               
               <div class="code-display">
+                <!-- 연결 상태 표시 -->
+                <div class="connection-status">
+                  <div class="status-indicator" :class="{ connected: isGuardianConnected }">
+                    <span class="status-dot"></span>
+                    <span class="status-text">
+                      {{ isGuardianConnected ? '보호자 연결됨' : '보호자 연결 대기 중' }}
+                    </span>
+                  </div>
+                </div>
+                
                 <div class="code-label">연결 코드</div>
                 <div class="code-box">
                   <span class="code-text">{{ generatedCode }}</span>
@@ -87,9 +96,17 @@
                     <span v-else class="copy-icon">📋</span>
                   </button>
                 </div>
+                
                 <div class="code-instruction">
                   <span class="instruction-icon">💡</span>
                   <span>이 코드를 보호자에게 알려주세요</span>
+                </div>
+                
+                <!-- 디버깅 정보 -->
+                <div class="debug-info" style="font-size: 10px; color: #999; margin-top: 10px;">
+                  <div>보호자 연결됨: {{ isGuardianConnected }}</div>
+                  <div>연결 해제 신호: {{ helpCodeStore.connectionTerminated }}</div>
+                  <div>코드: {{ helpCode }}</div>
                 </div>
               </div>
               
@@ -102,9 +119,14 @@
                   <span v-if="isLoading">생성 중...</span>
                   <span v-else>새 코드</span>
                 </button>
-                <button class="action-btn primary" @click="goToUserView">
-
-                  <span>연결하기</span>
+                <button 
+                  class="action-btn" 
+                  :class="{ 'primary': !generatedCode, 'danger': generatedCode }"
+                  @click="toggleConnection"
+                  :disabled="!helpCode"
+                >
+                  <span v-if="generatedCode">연결 끊기</span>
+                  <span v-else>연결하기</span>
                 </button>
               </div>
             </div>
@@ -231,16 +253,55 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { createHelpRequest } from '@/api/index'
 import { getBankInfo, extractBankCode } from '@/utils/bankMapping'
+import { useHelpCodeStore } from '@/stores/helpCode'
+import { useWebSocketUser } from '@/utils/useWebSocketUser'
 
 const router = useRouter()
 const isLoading = ref(false)
 const isCopying = ref(false)
 const errorMessage = ref('')
 const generatedCode = ref('')
+
+// 도움 요청 코드 store
+const helpCodeStore = useHelpCodeStore()
+
+// 웹소켓 연결 상태 감지
+const helpCode = computed(() => {
+  return helpCodeStore.generatedCode
+})
+
+// 웹소켓 연결 (동적으로 코드 변경 감지)
+const { connected: isWebSocketConnected, guardianMessage, connect: connectWebSocket, disconnect: disconnectWebSocket } = useWebSocketUser(null)
+
+// 보호자 연결 상태 (실제 보호자 메시지 수신 여부로 판단)
+const isGuardianConnected = ref(false)
+
+// 보호자 메시지 감지하여 연결 상태 업데이트
+watch(guardianMessage, (newMessage) => {
+  if (newMessage && newMessage.trim()) {
+    console.log('📨 MainPage 보호자 메시지 수신:', newMessage)
+    isGuardianConnected.value = true
+  }
+})
+
+// 코드 변경 감지하여 웹소켓 재연결
+watch(helpCode, (newCode, oldCode) => {
+  console.log('🔄 MainPage 코드 변경됨:', oldCode, '->', newCode)
+  if (newCode && newCode !== oldCode) {
+    // 기존 연결 해제 후 새 코드로 재연결
+    disconnectWebSocket()
+    // 보호자 연결 상태 초기화
+    isGuardianConnected.value = false
+    setTimeout(() => {
+      connectWebSocket(newCode)
+      console.log('🔗 MainPage 새 코드로 웹소켓 재연결:', newCode)
+    }, 500)
+  }
+}, { immediate: true })
 
 // 계좌 정보
 const accountNumber = ref('004-123456-78-90') // KB국민은행 계좌번호
@@ -276,6 +337,8 @@ const generateHelpCode = async () => {
     
     console.log('생성된 도움 요청 코드:', helpCode)
     generatedCode.value = helpCode
+    // store에도 저장
+    helpCodeStore.setGeneratedCode(helpCode)
     
   } catch (error) {
     console.error('도움 요청 생성 실패:', error)
@@ -309,12 +372,55 @@ const copyCode = async () => {
   }
 }
 
-// UserView로 이동
-const goToUserView = () => {
-  router.push({
-    path: '/user',
-    query: { code: generatedCode.value }
+// 연결 상태 토글
+const toggleConnection = () => {
+  console.log('🔌 MainPage toggleConnection 호출됨')
+  console.log('🔌 MainPage isGuardianConnected:', isGuardianConnected.value)
+  console.log('🔌 MainPage generatedCode:', generatedCode.value)
+  console.log('🔌 MainPage helpCode:', helpCode.value)
+  console.log('🔌 MainPage store 상태:', {
+    generatedCode: helpCodeStore.generatedCode,
+    isConnectionDisabled: helpCodeStore.isConnectionDisabled,
+    connectionTerminated: helpCodeStore.connectionTerminated
   })
+  
+  // 코드가 생성되어 있으면 연결 끊기로 처리
+  if (generatedCode.value) {
+    console.log('🔌 MainPage 연결 끊기 시작 (코드 존재)')
+    
+    // 연결 끊기 처리
+    disconnectWebSocket()
+    isGuardianConnected.value = false
+    helpCodeStore.disableConnection() // store에 연결 비활성화 상태 저장
+    helpCodeStore.terminateConnection() // GuardianView에 연결 해제 신호 전송
+    
+    console.log('🔌 MainPage store 연결 비활성화 완료:', helpCodeStore.isConnectionDisabled)
+    console.log('🔌 MainPage 연결 해제 신호 설정 완료:', helpCodeStore.connectionTerminated)
+    
+    // 연결 끊기 시 초기화면으로 돌아가기
+    generatedCode.value = ''
+    helpCodeStore.clearGeneratedCode()
+    
+    console.log('🔌 MainPage 코드 초기화 완료')
+    console.log('🔌 MainPage 최종 store 상태:', {
+      generatedCode: helpCodeStore.generatedCode,
+      isConnectionDisabled: helpCodeStore.isConnectionDisabled,
+      connectionTerminated: helpCodeStore.connectionTerminated
+    })
+    
+    alert('보호자와의 연결이 끊어졌습니다.')
+  } else {
+    console.log('🔌 MainPage 연결하기 시작')
+    // 보호자가 연결되지 않은 상태라면 도움 요청 시작
+    if (!helpCode.value) {
+      alert('먼저 도움 요청 코드를 생성해주세요.')
+      return
+    }
+    // 웹소켓 연결 시도
+    connectWebSocket(helpCode.value)
+    helpCodeStore.enableConnection() // store에 연결 활성화 상태 저장
+    alert(`도움 요청이 시작되었습니다!\n코드: ${helpCode.value}\n\n보호자가 이 코드를 입력하면 실시간 채팅이 가능합니다.`)
+  }
 }
 
 // 이체 페이지로 이동
@@ -740,11 +846,21 @@ const goToAccountFavorites = () => {
   color: var(--white);
 }
 
+.success-icon.guardian-connected {
+  background: var(--kb-yellow-positive);
+  font-size: 18px;
+}
+
 .success-header h4 {
   font-size: 14px;
   font-weight: 600;
   margin: 0;
   color: var(--gray-800);
+}
+
+.guardian-connected-title {
+  color: var(--kb-yellow-positive) !important;
+  font-weight: 700 !important;
 }
 
 /* 코드 표시 */
@@ -821,6 +937,42 @@ const goToAccountFavorites = () => {
   animation: spin 1s linear infinite;
 }
 
+/* 연결 상태 표시 */
+.connection-status {
+  margin: 0 0 16px 0;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+
+.status-indicator.connected {
+  background: #F0FDF4;
+  color: #059669;
+  border: 1px solid #BBF7D0;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #DC2626;
+}
+
+.status-indicator.connected .status-dot {
+  background: #059669;
+}
+
 .code-instruction {
   display: flex;
   align-items: center;
@@ -879,6 +1031,20 @@ const goToAccountFavorites = () => {
   background: #605850;
   color: var(--white);
   border-color: #605850;
+}
+
+.action-btn.danger {
+  background: #DC2626;
+  color: var(--white);
+  border-color: #DC2626;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
+.action-btn.danger:hover:not(:disabled) {
+  background: #B91C1C;
+  border-color: #B91C1C;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
 }
 
 .action-btn.secondary:hover:not(:disabled) {
@@ -1366,4 +1532,5 @@ const goToAccountFavorites = () => {
     font-size: 14px;
   }
 }
+
 </style>

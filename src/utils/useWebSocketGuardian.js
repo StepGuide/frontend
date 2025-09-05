@@ -27,6 +27,11 @@ export const useWebSocketGuardian = () => {
 
       // ✅ 연결 후 구독 경로 설정
       subscribeToTopics(currentCode);
+      
+      // 보호자 연결 알림을 사용자에게 전송
+      setTimeout(() => {
+        sendMessageToUser("보호자가 연결되었습니다. 도움이 필요하시면 언제든 말씀해주세요.");
+      }, 500);
     },
     onStompError: (frame) => {
       console.error("❌ STOMP 오류:", frame.headers["message"]);
@@ -61,10 +66,21 @@ export const useWebSocketGuardian = () => {
         guardianMessage.value = msg.body;
       })
     );
+
+    subscriptions.push(
+      client.subscribe(`/topic/disconnect/${code}`, (msg) => {
+        console.log("📥 연결 해제 신호 수신:", msg.body);
+        if (msg.body === "USER_DISCONNECT") {
+          console.log("🔌 사용자가 연결을 해제했습니다. GuardianView 연결 해제 처리");
+          disconnect();
+        }
+      })
+    );
   };
 
   const connect = (code) => {
     currentCode = code;
+    console.log(`🔗 보호자가 코드 ${code}로 연결 시도`);
     client.activate();
   };
 
@@ -81,10 +97,13 @@ export const useWebSocketGuardian = () => {
 
   const sendMessageToUser = (text) => {
     if (currentCode) {
+      console.log(`📤 보호자 메시지 전송: ${text} (코드: ${currentCode})`);
       client.publish({
         destination: `/app/message/${currentCode}`,
         body: text,
       });
+    } else {
+      console.error('❌ 현재 코드가 없어서 메시지를 보낼 수 없습니다');
     }
   };
 

@@ -4,7 +4,6 @@
     <nav class="navbar">
       <div class="nav-content">
         <div class="logo">
-          <span class="logo-icon">🏦</span>
           <span class="logo-text">KB 금융 도우미 - 보호자 모드</span>
         </div>
         <div class="nav-actions">
@@ -19,7 +18,7 @@
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
       <!-- 연결되지 않은 상태 -->
-      <div v-if="!connected" class="connection-section">
+      <div v-if="!isLocallyConnected" class="connection-section">
         <div class="connection-card">
           <div class="connection-header">
             <h2>🧓 보호자 연결</h2>
@@ -62,11 +61,19 @@
         <!-- 연결 상태 헤더 -->
         <div class="connection-status">
           <div class="status-header">
-            <h2>🧓 연결된 사용자</h2>
+            <h2>연결된 사용자</h2>
             <div class="status-indicator">
               <span class="status-dot connected"></span>
               <span class="status-text">연결됨 ({{ code }})</span>
             </div>
+          </div>
+          
+          <!-- 디버깅 정보 -->
+          <div class="debug-info" style="font-size: 10px; color: #999; margin-top: 10px;">
+            <div>웹소켓 연결 상태: {{ connected }}</div>
+            <div>로컬 연결 상태: {{ isLocallyConnected }}</div>
+            <div>연결 해제 신호: {{ helpCodeStore.connectionTerminated }}</div>
+            <div>코드: {{ code }}</div>
           </div>
         </div>
 
@@ -132,15 +139,20 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWebSocketGuardian } from '@/utils/useWebSocketGuardian';
+import { useHelpCodeStore } from '@/stores/helpCode';
 
 const router = useRouter();
+const helpCodeStore = useHelpCodeStore();
 const connectionCode = ref(['', '', '', '', '', '']);
 const code = ref('');
 const messageText = ref('');
 const codeInputs = ref([]);
+
+// 로컬 연결 상태 (UI 제어용)
+const isLocallyConnected = ref(false);
 const quickMessages = [
   '다음 버튼을 눌러주세요',
   '금액을 입력해주세요',
@@ -179,13 +191,75 @@ const connectToUser = () => {
   if (fullCode.length === 6) {
     code.value = fullCode;
     connect(fullCode); // ✅ WebSocket 연결
+    isLocallyConnected.value = true; // 로컬 연결 상태 업데이트
   } else {
     alert('올바른 6자리 코드를 입력해주세요.');
   }
 };
 
+// 연결 상태 변경 감지
+watch(connected, (isConnected, wasConnected) => {
+  console.log('🔌 GuardianView 연결 상태 변경:', wasConnected, '->', isConnected)
+  
+  if (!isConnected && wasConnected) {
+    // 연결이 끊어졌을 때 초기화면으로 돌아가기
+    console.log('🔌 GuardianView 연결 끊어짐 - 초기화면으로 복원')
+    
+    // 연결 코드 초기화
+    connectionCode.value = ['', '', '', '', '', '']
+    code.value = ''
+    messageText.value = ''
+    
+    // 첫 번째 입력창에 포커스
+    nextTick(() => {
+      if (codeInputs.value[0]) {
+        codeInputs.value[0].focus()
+      }
+    })
+    
+    alert('사용자와의 연결이 끊어졌습니다.')
+  }
+})
+
+// 연결 해제 신호 감지 (MainPage에서 전송)
+watch(() => helpCodeStore.connectionTerminated, (isTerminated, wasTerminated) => {
+  console.log('🔌 GuardianView 연결 해제 신호 변경:', wasTerminated, '->', isTerminated)
+  console.log('🔌 GuardianView 현재 연결 상태:', connected.value)
+  console.log('🔌 GuardianView 로컬 연결 상태:', isLocallyConnected.value)
+  
+  if (isTerminated && isLocallyConnected.value) {
+    console.log('🔌 GuardianView 강제 연결 해제 처리 시작')
+    
+    // 로컬 연결 상태를 즉시 false로 설정
+    isLocallyConnected.value = false
+    console.log('🔌 GuardianView 로컬 연결 상태 false로 설정 완료')
+    
+    // 웹소켓 연결 해제
+    disconnect()
+    console.log('🔌 GuardianView 웹소켓 연결 해제 완료')
+    
+    // 연결 코드 초기화
+    connectionCode.value = ['', '', '', '', '', '']
+    code.value = ''
+    messageText.value = ''
+    console.log('🔌 GuardianView 코드 초기화 완료')
+    
+    // 첫 번째 입력창에 포커스
+    nextTick(() => {
+      if (codeInputs.value[0]) {
+        codeInputs.value[0].focus()
+      }
+    })
+    
+    alert('사용자와의 연결이 끊어졌습니다.')
+    console.log('🔌 GuardianView 연결 해제 처리 완료')
+  } else {
+    console.log('🔌 GuardianView 연결 해제 조건 불만족:', { isTerminated, isLocallyConnected: isLocallyConnected.value })
+  }
+})
+
 const toggleMode = () => {
-  router.push('/user');
+  router.push('/');
 };
 </script>
 

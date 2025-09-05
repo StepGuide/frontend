@@ -14,14 +14,10 @@ const router = createRouter({
       component: () => import('../views/GuardianView.vue'),
     },
     {
-      path: '/user',
-      name: 'user',
-      component: () => import('../views/UserView.vue'),
-    },
-    {
       path: '/login',
       name: 'login',
       component: () => import('../views/login/LoginPage.vue'),
+
     },
     {
       path: '/oauth/callback/kakao',
