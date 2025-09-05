@@ -509,7 +509,7 @@ const goToMain = () => {
 }
 
 const requestHelp = () => {
-  router.push('/user')
+  router.push('/')
 }
 
 const getBankIcon = (bankCode) => {

@@ -273,7 +273,7 @@ const goToPractice = () => {
 }
 
 const requestHelp = () => {
-  router.push('/user')
+  router.push('/')
 }
 
 const formatNumber = (num) => {

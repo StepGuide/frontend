@@ -373,7 +373,7 @@ const getTransactionTypeName = (type) => {
 }
 
 const requestHelp = () => {
-  router.push('/user')
+  router.push('/')
 }
 
 onMounted(() => {

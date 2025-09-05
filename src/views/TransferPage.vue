@@ -305,7 +305,7 @@ const confirmTransfer = () => {
 }
 
 const requestHelp = () => {
-  router.push('/user')
+  router.push('/')
 }
 </script>
 
