@@ -469,8 +469,9 @@ const toggleConnection = () => {
 
 // 이체 페이지로 이동
 const goToTransfer = () => {
-  router.push('/transfer');
-};
+  // router.push('/transfer')
+  router.push('/accountTransfer')
+}
 
 // 조회 페이지로 이동
 const goToInquiry = () => {
