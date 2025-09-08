@@ -54,6 +54,11 @@ const router = createRouter({
       name: 'accountFavoritesAdd',
       component: () => import('../views/AccountFavoritesPage/AFaddPage.vue'),
     },
+    {
+      path: '/accountTransfer',
+      name: 'accountTransfer',
+      component: () => import('../views/accountTransfer/AccountTransferPage.vue')
+    }
   ],
 });
 
