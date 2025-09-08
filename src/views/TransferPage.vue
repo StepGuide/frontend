@@ -220,8 +220,18 @@
           </div>
         </div>
 
+        <!-- 사기 민원 체크 경고 박스 (3건 이상일 때만 노출) -->
+        <div
+          v-if="isFraudHighRisk"
+          class="fraud-warning"
+          :class="{ danger: isFraudHighRisk }"
+        >
+          <span class="fraud-icon">⚠️</span>
+          <span class="fraud-text">{{ fraudCheckMessage }}</span>
+        </div>
+
         <!-- 이상징후 점수 표시 -->
-        <div class="anomaly-section" v-if="anomalyScore">
+        <div class="anomaly-section" v-if="anomalyScore && !isFraudHighRisk">
           <div class="anomaly-header">
             <div class="anomaly-title-section">
               <h3>이상탐지 결과</h3>
@@ -416,6 +426,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
+import { checkFraudAccount } from '@/api/fraudAccountApi';
 
 const router = useRouter();
 
@@ -435,6 +446,8 @@ const anomalyScore = ref(null);
 const isLoadingAnomaly = ref(false);
 const showScoreDetails = ref(false);
 const showScoreModal = ref(false);
+const fraudCheckMessage = ref('');
+const isFraudHighRisk = ref(false);
 
 const anomalyLevel = computed(() => {
   const score = anomalyScore?.value?.result?.totalScore ?? null;
@@ -560,11 +573,33 @@ const requestHelp = () => {
   router.push('/');
 };
 
-// 이상징후 점수 계산 호출
+// 이상징후 점수 계산 호출 (사기 민원 선행 체크 포함)
 const calculateAnomaly = async () => {
   try {
     isLoadingAnomaly.value = true;
     anomalyScore.value = null;
+
+    // 1) 사기 민원 체크 선행 호출
+    const fraudReqBody = {
+      accountNumber: transferInfo.value.accountNumber,
+    };
+    const fraudResp = await checkFraudAccount(fraudReqBody);
+    const fraudMsg = fraudResp?.data?.result || '';
+    // 화면 반영 메시지 및 위험 여부 판정
+    if (fraudMsg === '최근 3개월 내 사기민원  3건이상있습니다.') {
+      fraudCheckMessage.value = '3개월 내 3건이상 사기 신고를 당한 계좌입니다.';
+      isFraudHighRisk.value = true;
+    } else {
+      fraudCheckMessage.value = '3개월 내 3건이상 사기 신고를 당한 계좌입니다.';
+      isFraudHighRisk.value = false;
+    }
+
+    // 고위험일 경우 점수 계산 중단 (경고만 표시)
+    if (isFraudHighRisk.value) {
+      return;
+    }
+
+    // 2) 안전 메시지의 경우 점수 계산 진행
     const requestBody = {
       accountNumber: transferInfo.value.accountNumber,
       transactionAmount: Number(transferInfo.value.amount),
@@ -1425,6 +1460,31 @@ const calculateAnomaly = async () => {
   color: var(--gray-600);
   font-size: 14px;
   font-weight: 500;
+}
+
+/* 사기 민원 경고 박스 */
+.fraud-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300);
+  background: #fff1f2; /* 연한 빨간 배경 */
+  color: #b91c1c; /* 짙은 빨강 텍스트 */
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.fraud-warning.danger {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #991b1b;
+}
+.fraud-icon {
+  font-size: 16px;
+}
+.fraud-text {
+  font-size: 13px;
 }
 
 /* 이상탐지 제목 섹션 */
