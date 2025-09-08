@@ -292,6 +292,52 @@ const isCopying = ref(false);
 const errorMessage = ref('');
 const generatedCode = ref('');
 
+// 도움 요청 코드 store
+const helpCodeStore = useHelpCodeStore();
+
+// 웹소켓 연결 상태 감지
+const helpCode = computed(() => {
+  return helpCodeStore.generatedCode;
+});
+
+// 웹소켓 연결 (동적으로 코드 변경 감지)
+const {
+  connected: isWebSocketConnected,
+  guardianMessage,
+  connect: connectWebSocket,
+  disconnect: disconnectWebSocket,
+} = useWebSocketUser(null);
+
+// 보호자 연결 상태 (실제 보호자 메시지 수신 여부로 판단)
+const isGuardianConnected = ref(false);
+
+// 보호자 메시지 감지하여 연결 상태 업데이트
+watch(guardianMessage, (newMessage) => {
+  if (newMessage && newMessage.trim()) {
+    console.log('📨 MainPage 보호자 메시지 수신:', newMessage);
+    isGuardianConnected.value = true;
+  }
+});
+
+// 코드변경 감지하여 웹소켓 재연결
+watch(
+  helpCode,
+  (newCode, oldCode) => {
+    console.log('🔄 MainPage 코드 변경됨:', oldCode, '->', newCode);
+    if (newCode && newCode !== oldCode) {
+      // 기존 연결 해제 후 새 코드로 재연결
+      disconnectWebSocket();
+      // 보호자 연결 상태 초기화
+      isGuardianConnected.value = false;
+      setTimeout(() => {
+        connectWebSocket(newCode);
+        console.log('🔗 MainPage 새 코드로 웹소켓 재연결:', newCode);
+      }, 500);
+    }
+  },
+  { immediate: true }
+);
+
 // 계좌 정보
 const accountNumber = ref('004-123456-78-90'); // KB국민은행 계좌번호
 const secondaryAccountNumber = ref('004-987654-32-10'); // KB국민은행 계좌번호
