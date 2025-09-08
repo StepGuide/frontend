@@ -321,7 +321,7 @@ watch(guardianMessage, (newMessage) => {
   }
 });
 
-// 코드 변경 감지하여 웹소켓 재연결
+// 코드변경 감지하여 웹소켓 재연결
 watch(
   helpCode,
   (newCode, oldCode) => {
