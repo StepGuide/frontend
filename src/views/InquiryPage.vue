@@ -26,10 +26,19 @@
           <h2>조회할 계좌 선택</h2>
         </div>
         <div class="account-dropdown">
-          <select v-model="selectedAccountId" @change="loadTransactions" class="account-select">
+          <select
+            v-model="selectedAccountId"
+            @change="loadTransactions"
+            class="account-select"
+          >
             <option value="">계좌를 선택하세요</option>
-            <option v-for="account in accounts" :key="account.id" :value="account.id">
-              {{ account.bankName }} - {{ account.accountNumber }} (₩ {{ formatNumber(account.balance) }})
+            <option
+              v-for="account in accounts"
+              :key="account.id"
+              :value="account.id"
+            >
+              {{ account.bankName }} - {{ account.accountNumber }} (₩
+              {{ formatNumber(account.balance) }})
             </option>
           </select>
         </div>
@@ -40,10 +49,10 @@
         <div class="section-header">
           <h2>조회 조건</h2>
         </div>
-        
+
         <div class="condition-tabs">
-          <button 
-            v-for="period in periods" 
+          <button
+            v-for="period in periods"
             :key="period.value"
             class="period-tab"
             :class="{ active: selectedPeriod === period.value }"
@@ -57,18 +66,18 @@
           <div class="date-inputs">
             <div class="date-group">
               <label>시작일</label>
-              <input 
-                v-model="customStartDate" 
-                type="date" 
+              <input
+                v-model="customStartDate"
+                type="date"
                 class="date-input"
                 :max="today"
               />
             </div>
             <div class="date-group">
               <label>종료일</label>
-              <input 
-                v-model="customEndDate" 
-                type="date" 
+              <input
+                v-model="customEndDate"
+                type="date"
                 class="date-input"
                 :max="today"
               />
@@ -80,24 +89,36 @@
           <label>거래 유형</label>
           <div class="filter-options">
             <label class="filter-option">
-              <input 
-                v-model="transactionTypes" 
-                type="checkbox" 
+              <input
+                v-model="transactionTypes"
+                type="checkbox"
                 value="all"
                 @change="toggleAllTypes"
               />
               <span>전체</span>
             </label>
             <label class="filter-option">
-              <input v-model="transactionTypes" type="checkbox" value="income" />
+              <input
+                v-model="transactionTypes"
+                type="checkbox"
+                value="income"
+              />
               <span>입금</span>
             </label>
             <label class="filter-option">
-              <input v-model="transactionTypes" type="checkbox" value="expense" />
+              <input
+                v-model="transactionTypes"
+                type="checkbox"
+                value="expense"
+              />
               <span>출금</span>
             </label>
             <label class="filter-option">
-              <input v-model="transactionTypes" type="checkbox" value="transfer" />
+              <input
+                v-model="transactionTypes"
+                type="checkbox"
+                value="transfer"
+              />
               <span>이체</span>
             </label>
           </div>
@@ -105,7 +126,9 @@
 
         <div class="search-actions">
           <button class="btn-secondary" @click="resetConditions">초기화</button>
-          <button class="btn-primary" @click="searchTransactions">조회하기</button>
+          <button class="btn-primary" @click="searchTransactions">
+            조회하기
+          </button>
         </div>
       </div>
 
@@ -122,24 +145,34 @@
         </div>
 
         <div class="transaction-list">
-          <div 
-            v-for="transaction in transactions" 
+          <div
+            v-for="transaction in transactions"
             :key="transaction.id"
             class="transaction-item"
           >
             <div class="transaction-icon">
-              <span :class="getTransactionIcon(transaction.type)">
-                {{ getTransactionEmoji(transaction.type) }}
-              </span>
+              <img
+                v-if="transaction.sendBankCode"
+                :src="getBankLogo(transaction.sendBankCode)"
+                alt="은행 로고"
+                class="bank-logo"
+              />
+              <span v-else class="default-icon">🏦</span>
             </div>
-            
+
             <div class="transaction-info">
               <div class="transaction-main">
-                <div class="transaction-type">{{ getTransactionTypeName(transaction.type) }}</div>
-                <div class="transaction-desc">{{ transaction.description }}</div>
+                <div class="transaction-type">
+                  {{ getTransactionTypeName(transaction.type) }}
+                </div>
+                <div class="transaction-desc">
+                  {{ transaction.description }}
+                </div>
               </div>
               <div class="transaction-details">
-                <div class="transaction-date">{{ formatDate(transaction.date) }}</div>
+                <div class="transaction-date">
+                  {{ formatDate(transaction.date) }}
+                </div>
                 <div class="transaction-time">{{ transaction.time }}</div>
                 <div v-if="transaction.balance" class="transaction-balance">
                   잔액: ₩ {{ formatNumber(transaction.balance) }}
@@ -148,14 +181,15 @@
             </div>
 
             <div class="transaction-amount">
-              <div 
+              <div
                 class="amount"
-                :class="{ 
-                  income: transaction.amount > 0, 
-                  expense: transaction.amount < 0 
+                :class="{
+                  income: transaction.amount > 0,
+                  expense: transaction.amount < 0,
                 }"
               >
-                {{ transaction.amount > 0 ? '+' : '' }}₩ {{ formatNumber(Math.abs(transaction.amount)) }}
+                {{ transaction.amount > 0 ? '+' : '' }}₩
+                {{ formatNumber(Math.abs(transaction.amount)) }}
               </div>
             </div>
           </div>
@@ -173,7 +207,9 @@
         <div class="no-results-icon">📋</div>
         <h3>조회된 거래내역이 없습니다</h3>
         <p>선택한 조건에 해당하는 거래내역이 없습니다.</p>
-        <button class="btn-primary" @click="resetConditions">조건 다시 설정</button>
+        <button class="btn-primary" @click="resetConditions">
+          조건 다시 설정
+        </button>
       </div>
 
       <!-- 계좌 미선택 안내 -->
@@ -187,247 +223,218 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import axios from 'axios';
+import { useBankStore } from '@/stores/bank';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 
-const router = useRouter()
+const router = useRouter();
+const bankStore = useBankStore();
 
 // 반응형 데이터
-const selectedAccountId = ref('')
-const selectedPeriod = ref('week')
-const customStartDate = ref('')
-const customEndDate = ref('')
-const transactionTypes = ref(['all'])
-const transactions = ref([])
-const hasSearched = ref(false)
+const selectedAccountId = ref('');
+const selectedPeriod = ref('week');
+const customStartDate = ref('');
+const customEndDate = ref('');
+const transactionTypes = ref(['all']);
+const transactions = ref([]);
+const hasSearched = ref(false);
+
+const getBankLogo = (bankCode) => {
+  const bank = bankStore.banks.find((b) => b.code === bankCode);
+  console.log(bank.logo);
+  return bank ? bank.logo : '';
+};
 
 // 오늘 날짜
-const today = computed(() => {
-  return new Date().toISOString().split('T')[0]
-})
+const today = computed(() => new Date().toISOString().split('T')[0]);
 
-// 계좌 목록 (샘플 데이터)
+// 계좌 목록 (샘플 데이터 유지)
 const accounts = ref([
   {
     id: 1,
     bankName: 'KB국민은행',
     accountNumber: '123-456789-01-234',
     accountName: '김영희',
-    balance: 2450000
+    balance: 2450000,
   },
   {
     id: 2,
     bankName: 'KB국민은행',
     accountNumber: '987-654321-02-345',
     accountName: '김영희',
-    balance: 1200000
-  }
-])
+    balance: 1200000,
+  },
+]);
 
 // 조회 기간 옵션
 const periods = ref([
   { label: '최근 1주', value: 'week' },
   { label: '최근 1개월', value: 'month' },
   { label: '최근 3개월', value: 'quarter' },
-  { label: '직접 선택', value: 'custom' }
-])
+  { label: '직접 선택', value: 'custom' },
+]);
 
 // 선택된 계좌
-const selectedAccount = computed(() => {
-  return accounts.value.find(account => account.id == selectedAccountId.value)
-})
+const selectedAccount = computed(() =>
+  accounts.value.find((account) => account.id == selectedAccountId.value)
+);
 
-// 샘플 거래내역 데이터
-const sampleTransactions = ref([
-  {
-    id: 1,
-    type: 'income',
-    description: '월급',
-    amount: 500000,
-    date: '2024-01-15',
-    time: '09:30',
-    balance: 2450000
-  },
-  {
-    id: 2,
-    type: 'expense',
-    description: 'ATM 출금',
-    amount: -50000,
-    date: '2024-01-14',
-    time: '14:20',
-    balance: 1950000
-  },
-  {
-    id: 3,
-    type: 'transfer',
-    description: '이체 - 김철수',
-    amount: -100000,
-    date: '2024-01-13',
-    time: '16:45',
-    balance: 2000000
-  },
-  {
-    id: 4,
-    type: 'income',
-    description: '이자',
-    amount: 2500,
-    date: '2024-01-12',
-    time: '00:00',
-    balance: 2100000
-  },
-  {
-    id: 5,
-    type: 'expense',
-    description: '카드 결제',
-    amount: -75000,
-    date: '2024-01-11',
-    time: '19:30',
-    balance: 2097500
-  }
-])
+// 뒤로가기
+const goBack = () => router.push('/');
 
-// 메서드
-const goBack = () => {
-  router.push('/')
-}
-
+// 기간 선택
 const selectPeriod = (period) => {
-  selectedPeriod.value = period
+  selectedPeriod.value = period;
   if (period !== 'custom') {
-    customStartDate.value = ''
-    customEndDate.value = ''
+    customStartDate.value = '';
+    customEndDate.value = '';
   }
-}
+};
 
+// 전체/개별 거래 유형 토글
 const toggleAllTypes = () => {
   if (transactionTypes.value.includes('all')) {
-    transactionTypes.value = ['all']
+    transactionTypes.value = ['all'];
   } else {
-    transactionTypes.value = []
+    transactionTypes.value = [];
   }
-}
+};
 
+// 계좌 선택 시 초기화
 const loadTransactions = () => {
-  transactions.value = []
-  hasSearched.value = false
-}
+  hasSearched.value = false;
+  transactions.value = [];
+};
 
-const searchTransactions = () => {
-  // 실제 API 호출 대신 샘플 데이터 사용
-  transactions.value = [...sampleTransactions.value]
-  hasSearched.value = true
-}
+// 거래내역 조회
+const searchTransactions = async () => {
+  if (!selectedAccountId.value) return;
 
-const loadMoreTransactions = () => {
-  // 더 많은 거래내역 로드 로직
-  alert('더 많은 거래내역을 불러옵니다.')
-}
+  try {
+    const response = await axios.get(
+      `/api/transfer/transactions/${selectedAccountId.value}`
+    );
 
+    // API 데이터 변환
+    let result = response.data.map((t) => ({
+      id: t.id,
+      type:
+        t.depositWithdrawal === 'DEPOSIT'
+          ? 'income'
+          : t.depositWithdrawal === 'TRANSFER'
+          ? 'transfer'
+          : 'expense',
+      description: t.memo,
+      amount:
+        t.depositWithdrawal === 'DEPOSIT'
+          ? t.transactionAmount
+          : -t.transactionAmount,
+      date: t.createdTime.split('T')[0],
+      time: t.createdTime.split('T')[1] || '',
+      balance: t.balance || selectedAccount.value?.balance || null,
+      sendBankCode: t.sendBankCode,
+    }));
+
+    // 거래 유형 필터링
+    if (!transactionTypes.value.includes('all')) {
+      result = result.filter((t) => transactionTypes.value.includes(t.type));
+    }
+
+    transactions.value = result;
+    hasSearched.value = true;
+  } catch (error) {
+    alert('거래내역을 불러오는 데 실패했습니다.');
+  }
+};
+
+// 더보기 (백엔드 연동 필요 시 수정)
+const loadMoreTransactions = () => alert('더 많은 거래내역을 불러옵니다.');
+
+// 조건 초기화
 const resetConditions = () => {
-  selectedPeriod.value = 'week'
-  customStartDate.value = ''
-  customEndDate.value = ''
-  transactionTypes.value = ['all']
-  transactions.value = []
-  hasSearched.value = false
-}
+  selectedPeriod.value = 'week';
+  customStartDate.value = '';
+  customEndDate.value = '';
+  transactionTypes.value = ['all'];
+  transactions.value = [];
+  hasSearched.value = false;
+};
 
-const formatNumber = (num) => {
-  return new Intl.NumberFormat('ko-KR').format(num)
-}
-
-const formatDate = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', {
+// 유틸
+const formatNumber = (num) => new Intl.NumberFormat('ko-KR').format(num);
+const formatDate = (dateString) =>
+  new Date(dateString).toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
-  })
-}
+    day: 'numeric',
+  });
 
-const getTransactionIcon = (type) => {
-  const icons = {
+const getTransactionIcon = (type) =>
+  ({
     income: 'income-icon',
     expense: 'expense-icon',
-    transfer: 'transfer-icon'
-  }
-  return icons[type] || 'default-icon'
-}
+    transfer: 'transfer-icon',
+  }[type] || 'default-icon');
+const getTransactionEmoji = (type) =>
+  ({ income: '💰', expense: '💸', transfer: '🔄' }[type] || '📄');
+const getTransactionTypeName = (type) =>
+  ({ income: '입금', expense: '출금', transfer: '이체' }[type] || '기타');
 
-const getTransactionEmoji = (type) => {
-  const emojis = {
-    income: '💰',
-    expense: '💸',
-    transfer: '🔄'
-  }
-  return emojis[type] || '📄'
-}
-
-const getTransactionTypeName = (type) => {
-  const names = {
-    income: '입금',
-    expense: '출금',
-    transfer: '이체'
-  }
-  return names[type] || '기타'
-}
-
-const requestHelp = () => {
-  router.push('/')
-}
-
-onMounted(() => {
-  // 초기화 로직
-})
+// 도움말
+const requestHelp = () => router.push('/');
 </script>
 
 <style scoped>
 /* CSS 변수 정의 - KB국민은행 공식 브랜드 컬러 */
 .inquiry-page {
   /* KB Main Colors */
-  --kb-yellow-positive: #FFBC00;  /* KB Yellow Positive - R255 G188 B0 */
-  --kb-yellow-negative: #FFCC00;  /* KB Yellow Negative - R255 G204 B0 */
-  --kb-gray: #605850;             /* KB Gray - R96 G88 B76 */
-  
+  --kb-yellow-positive: #ffbc00; /* KB Yellow Positive - R255 G188 B0 */
+  --kb-yellow-negative: #ffcc00; /* KB Yellow Negative - R255 G204 B0 */
+  --kb-gray: #605850; /* KB Gray - R96 G88 B76 */
+
   /* KB Sub Colors */
-  --kb-dark-gray: #545049;        /* KB Dark Gray - R84 G80 B69 */
-  --kb-gold: #B8860B;             /* KB Gold (추정) */
-  --kb-silver: #C0C0C0;           /* KB Silver (추정) */
-  
+  --kb-dark-gray: #545049; /* KB Dark Gray - R84 G80 B69 */
+  --kb-gold: #b8860b; /* KB Gold (추정) */
+  --kb-silver: #c0c0c0; /* KB Silver (추정) */
+
   /* Derived Colors */
   --primary: var(--kb-yellow-positive);
-  --primary-light: #FFF4D6;
-  --primary-dark: #E6A600;
+  --primary-light: #fff4d6;
+  --primary-dark: #e6a600;
   --secondary: var(--kb-yellow-negative);
-  --secondary-light: #FFF8E1;
+  --secondary-light: #fff8e1;
   --accent: var(--kb-gray);
-  --accent-light: #F5F4F2;
-  --success: #4CAF50;
+  --accent-light: #f5f4f2;
+  --success: #4caf50;
   --warning: var(--kb-yellow-negative);
-  --danger: #F44336;
-  
+  --danger: #f44336;
+
   /* Gray Scale */
-  --gray-50: #FAFAFA;
-  --gray-100: #F5F5F5;
-  --gray-200: #EEEEEE;
-  --gray-300: #E0E0E0;
-  --gray-400: #BDBDBD;
-  --gray-500: #9E9E9E;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #eeeeee;
+  --gray-300: #e0e0e0;
+  --gray-400: #bdbdbd;
+  --gray-500: #9e9e9e;
   --gray-600: #757575;
   --gray-700: #616161;
   --gray-800: #424242;
   --gray-900: #212121;
-  
-  --white: #FFFFFF;
+
+  --white: #ffffff;
   --black: #000000;
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
   /* Border Radius */
   --radius-sm: 6px;
   --radius: 8px;
@@ -446,7 +453,8 @@ onMounted(() => {
 .inquiry-page {
   min-height: 100vh;
   background: var(--gray-50);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, sans-serif;
   color: var(--gray-800);
   line-height: 1.6;
 }
@@ -499,7 +507,11 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--kb-yellow-positive) 0%,
+    var(--primary-dark) 100%
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 16px;
@@ -539,7 +551,8 @@ onMounted(() => {
   font-weight: 600;
   color: var(--kb-gray);
   letter-spacing: -0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 .help-btn {
@@ -555,7 +568,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -584,7 +598,8 @@ onMounted(() => {
   color: var(--kb-gray);
   margin-bottom: 4px;
   letter-spacing: -0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 계좌 선택 */
@@ -605,7 +620,8 @@ onMounted(() => {
   background: var(--white);
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   font-weight: 500;
   letter-spacing: -0.1px;
 }
@@ -642,7 +658,8 @@ onMounted(() => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -723,7 +740,7 @@ onMounted(() => {
   color: var(--kb-text-secondary);
 }
 
-.filter-option input[type="checkbox"] {
+.filter-option input[type='checkbox'] {
   width: 18px;
   height: 18px;
   accent-color: var(--kb-orange);
@@ -758,7 +775,8 @@ onMounted(() => {
   font-weight: 600;
   color: var(--kb-gray);
   letter-spacing: -0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 .results-summary {
@@ -778,7 +796,8 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 700;
   color: var(--kb-yellow-positive);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.3px;
 }
 
@@ -807,15 +826,22 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
-.transaction-icon {
-  width: 48px;
-  height: 48px;
+/* .transaction-icon {
+  width: 40px; 
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--white);
   border-radius: 50%;
-  font-size: 24px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0; 
+} */
+
+.bank-logo {
+  width: 60px; /* 적절한 은행 로고 크기 */
+  height: 60px;
+  object-fit: contain; /* 비율 유지 */
 }
 
 .transaction-info {
@@ -862,7 +888,8 @@ onMounted(() => {
 .amount {
   font-size: 18px;
   font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.3px;
 }
 
@@ -937,7 +964,8 @@ onMounted(() => {
 }
 
 /* 버튼 */
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
   padding: 12px 24px;
   border-radius: 20px;
   font-size: 14px;
@@ -946,7 +974,8 @@ onMounted(() => {
   transition: all 0.2s ease;
   border: none;
   min-width: 100px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.2px;
 }
 
@@ -981,50 +1010,51 @@ onMounted(() => {
   .main-content {
     padding: 16px;
   }
-  
+
   .condition-tabs {
     flex-direction: column;
   }
-  
+
   .period-tab {
     text-align: center;
   }
-  
+
   .date-inputs {
     flex-direction: column;
   }
-  
+
   .filter-options {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .results-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .results-summary {
     align-items: flex-start;
   }
-  
+
   .transaction-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .transaction-amount {
     text-align: left;
     width: 100%;
   }
-  
+
   .search-actions {
     flex-direction: column;
   }
-  
-  .btn-primary, .btn-secondary {
+
+  .btn-primary,
+  .btn-secondary {
     width: 100%;
   }
 }
