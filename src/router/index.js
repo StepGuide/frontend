@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
+import practiceRoutes from './practice';
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -39,21 +41,23 @@ const router = createRouter({
       name: 'accountOverview',
       component: () => import('../views/AccountOverviewPage.vue'),
     },
-    {
-      path: '/practice',
-      name: 'practice',
-      component: () => import('../views/PracticePage.vue'),
-    },
+    // {
+    //   path: '/practice',
+    //   name: 'practice',
+    //   component: () => import('../views/PracticePage/PracticeMainPage.vue'),
+    // },
     {
       path: '/account-favorites',
       name: 'accountFavorites',
-      component: () => import('../views/AccountFavoritesPage/AFMainPage.vue'),
+      component: () => import('../views/accountFavorites/AFMainPage.vue'),
     },
     {
       path: '/account-favorites/add',
       name: 'accountFavoritesAdd',
-      component: () => import('../views/AccountFavoritesPage/AFaddPage.vue'),
+      component: () => import('../views/accountFavorites/AFaddPage.vue'),
     },
+
+    ...practiceRoutes,
   ],
 });
 
