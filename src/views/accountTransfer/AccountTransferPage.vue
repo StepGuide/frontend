@@ -226,7 +226,7 @@ onMounted(() => {
               <span class="currency">원</span>
             </div>
             <div class="amount-display">
-              ₩ {{ formatNumber(transferDTO.transactionAmount || 0) }}
+              {{ formatNumber(transferDTO.transactionAmount || 0) }} 원
             </div>
           </div>
 
