@@ -29,9 +29,6 @@
           <p class="welcome-subtitle">
             오늘도 안전하게 금융 서비스를 이용해보세요
           </p>
-          <p class="welcome-subtitle">
-            오늘도 안전하게 금융 서비스를 이용해보세요
-          </p>
         </div>
         <div class="help-request-card">
           <div class="help-content">
@@ -80,10 +77,7 @@
 
             <!-- 코드가 생성된 상태 -->
             <div v-else class="generated-code-section">
-              <div class="success-header">
-                <div class="success-icon">✅</div>
-                <h4>도움 요청 코드가 생성되었습니다</h4>
-              </div>
+              <div class="success-header"></div>
 
               <div class="code-display">
                 <!-- 연결 상태 표시 -->
@@ -143,8 +137,14 @@
                   <span v-if="isLoading">생성 중...</span>
                   <span v-else>새 코드</span>
                 </button>
-                <button class="action-btn primary" @click="goToUserView">
-                  <span>연결하기</span>
+                <button
+                  class="action-btn"
+                  :class="{ primary: !generatedCode, danger: generatedCode }"
+                  @click="toggleConnection"
+                  :disabled="!helpCode"
+                >
+                  <span v-if="generatedCode">연결 끊기</span>
+                  <span v-else>연결하기</span>
                 </button>
               </div>
             </div>
@@ -281,10 +281,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { createHelpRequest } from '@/api/index';
 import { getBankInfo, extractBankCode } from '@/utils/bankMapping';
+import { useHelpCodeStore } from '@/stores/helpCode';
+import { useWebSocketUser } from '@/utils/useWebSocketUser';
 
 const router = useRouter();
 const isLoading = ref(false);
@@ -372,6 +374,8 @@ const generateHelpCode = async () => {
 
     console.log('생성된 도움 요청 코드:', helpCode);
     generatedCode.value = helpCode;
+    // store에도 저장
+    helpCodeStore.setGeneratedCode(helpCode);
   } catch (error) {
     console.error('도움 요청 생성 실패:', error);
     errorMessage.value = '도움 요청 생성에 실패했습니다. 다시 시도해주세요.';
@@ -404,12 +408,63 @@ const copyCode = async () => {
   }
 };
 
-// UserView로 이동
-const goToUserView = () => {
-  router.push({
-    path: '/user',
-    query: { code: generatedCode.value },
+// 연결 상태 토글
+const toggleConnection = () => {
+  console.log('🔌 MainPage toggleConnection 호출됨');
+  console.log('🔌 MainPage isGuardianConnected:', isGuardianConnected.value);
+  console.log('🔌 MainPage generatedCode:', generatedCode.value);
+  console.log('🔌 MainPage helpCode:', helpCode.value);
+  console.log('🔌 MainPage store 상태:', {
+    generatedCode: helpCodeStore.generatedCode,
+    isConnectionDisabled: helpCodeStore.isConnectionDisabled,
+    connectionTerminated: helpCodeStore.connectionTerminated,
   });
+
+  // 코드가 생성되어 있으면 연결 끊기로 처리
+  if (generatedCode.value) {
+    console.log('🔌 MainPage 연결 끊기 시작 (코드 존재)');
+
+    // 연결 끊기 처리
+    disconnectWebSocket();
+    isGuardianConnected.value = false;
+    helpCodeStore.disableConnection(); // store에 연결 비활성화 상태 저장
+    helpCodeStore.terminateConnection(); // GuardianView에 연결 해제 신호 전송
+
+    console.log(
+      '🔌 MainPage store 연결 비활성화 완료:',
+      helpCodeStore.isConnectionDisabled
+    );
+    console.log(
+      '🔌 MainPage 연결 해제 신호 설정 완료:',
+      helpCodeStore.connectionTerminated
+    );
+
+    // 연결 끊기 시 초기화면으로 돌아가기
+    generatedCode.value = '';
+    helpCodeStore.clearGeneratedCode();
+
+    console.log('🔌 MainPage 코드 초기화 완료');
+    console.log('🔌 MainPage 최종 store 상태:', {
+      generatedCode: helpCodeStore.generatedCode,
+      isConnectionDisabled: helpCodeStore.isConnectionDisabled,
+      connectionTerminated: helpCodeStore.connectionTerminated,
+    });
+
+    alert('보호자와의 연결이 끊어졌습니다.');
+  } else {
+    console.log('🔌 MainPage 연결하기 시작');
+    // 보호자가 연결되지 않은 상태라면 도움 요청 시작
+    if (!helpCode.value) {
+      alert('먼저 도움 요청 코드를 생성해주세요.');
+      return;
+    }
+    // 웹소켓 연결 시도
+    connectWebSocket(helpCode.value);
+    helpCodeStore.enableConnection(); // store에 연결 활성화 상태 저장
+    alert(
+      `도움 요청이 시작되었습니다!\n코드: ${helpCode.value}\n\n보호자가 이 코드를 입력하면 실시간 채팅이 가능합니다.`
+    );
+  }
 };
 
 // 이체 페이지로 이동
