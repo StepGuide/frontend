@@ -1,7 +1,9 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTransferStore } from '@/stores/accountTransferStore'
+import { useTransferStore } from '@/stores/accountTransferStore';
+import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
+import { checkFraudAccount } from '@/api/fraudAccountApi';
 
 const router = useRouter()
 const store = useTransferStore()
@@ -45,13 +47,32 @@ const nextStep = async () => {
       return
     }
   }
+
   store.nextStep()
+
+  // 업데이트된 currentStep 확인 후 이상탐지 실행
+  if (currentStep.value === 3) {
+    await calculateAnomaly()
+  }
+
+  
 }
 
 const prevStep = () => store.prevStep()
 
 const confirmTransfer = async () => {
   try {
+    // await calculateAnomaly()
+
+    // if (isFraudHighRisk.value) {
+    //   alert('위험 거래로 인해 이체가 제한됩니다.')
+    //   return
+    // }
+    // if (anomalyLevel.value === 'high') {
+    //   alert('이상징후 점수가 높아 이체가 제한됩니다.')
+    //   return
+    // }
+
     const res = await store.execute()
     alert(res || '이체 완료!')
     router.push('/')
@@ -120,6 +141,95 @@ const getBankName = (code) => {
   return bank ? bank.name : code
 }
 
+// <이상계좌 탐지>
+// 이상징후 점수 상태 및 표시 계산값
+const anomalyScore = ref(null);
+const isLoadingAnomaly = ref(false);
+const showScoreDetails = ref(false);
+const showScoreModal = ref(false);
+const fraudCheckMessage = ref('');
+const isFraudHighRisk = ref(false);
+
+const anomalyLevel = computed(() => {
+  const score = anomalyScore?.value?.result?.totalScore ?? null;
+  if (score === null || score === undefined) return null;
+  if (score < 30) return 'normal';
+  if (score < 50) return 'caution';
+  return 'high';
+});
+
+const anomalyLabel = computed(() => {
+  if (!anomalyLevel.value) return '';
+  return anomalyLevel.value === 'normal'
+    ? '정상'
+    : anomalyLevel.value === 'caution'
+    ? '주의/안심경고'
+    : '고위험';
+});
+
+// 주의 단계에서 노출할 위험 요소 리스트
+const riskFactors = computed(() => {
+  const list = [];
+  const res =
+    anomalyScore && anomalyScore.value ? anomalyScore.value.result : null;
+  if (!res) return list;
+  if (res.previousTransferScore > 0)
+    list.push('최근 1년간 송금한 적 없는 계좌');
+  if (res.largeAmountScore > 0) list.push('큰 금액 송금');
+  if (res.nightTimeScore > 0) list.push('야간 시간대 거래');
+  if (res.dailyFrequencyScore > 0) list.push('송금횟수 많음');
+  if (res.favoriteAccountScore > 0) list.push('즐겨찾기 등록되지 않은 계좌');
+  return list;
+});
+
+// 이상징후 점수 계산 호출 (사기 민원 선행 체크 포함)
+const calculateAnomaly = async () => {
+  try {
+    isLoadingAnomaly.value = true;
+    anomalyScore.value = null;
+
+    // 1) 사기 민원 체크 선행 호출
+    const fraudReqBody = {
+      accountNumber: transferDTO.value.payeeAccountNumber,
+    };
+    const fraudResp = await checkFraudAccount(fraudReqBody);
+    const fraudMsg = fraudResp?.data?.result || '';
+    // 화면 반영 메시지 및 위험 여부 판정
+    if (fraudMsg === '최근 3개월 내 사기민원  3건이상있습니다.') {
+      fraudCheckMessage.value = '3개월 내 3건이상 사기 신고를 당한 계좌입니다.';
+      isFraudHighRisk.value = true;
+    } else {
+      fraudCheckMessage.value = '3개월 내 3건이상 사기 신고를 당한 계좌입니다.';
+      isFraudHighRisk.value = false;
+    }
+
+    // 고위험일 경우 점수 계산 중단 (경고만 표시)
+    if (isFraudHighRisk.value) {
+      return;
+    }
+
+    // 2) 안전 메시지의 경우 점수 계산 진행
+    const requestBody = {
+      accountNumber: transferDTO.value.payeeAccountNumber,
+      transactionAmount: Number(transferDTO.value.transactionAmount),
+      transactionDateTime: new Date().toISOString(),
+    };
+    const response = await calculateAnomalyScore(requestBody);
+    if (response && response.data) {
+      anomalyScore.value = response.data;
+    }
+  } catch (e) {
+    console.error('이상징후 점수 계산 실패:', e);
+    anomalyScore.value = {
+      isSuccess: false,
+      code: 500,
+      message: '이상징후 점수 계산 실패',
+      result: { totalScore: null },
+    };
+  } finally {
+    isLoadingAnomaly.value = false;
+  }
+};
 
 onMounted(() => {
   const userId = 1 // 로그인 유저 ID
@@ -178,9 +288,21 @@ onMounted(() => {
           <div v-for="acc in accounts" :key="acc.accountId" class="account-item"
              :class="{ selected: selectedAccount?.accountId === acc.accountId }"
              @click="selectAccount(acc)">
-          <div>{{ acc.bankName }} {{ acc.accountNumber }} ({{ acc.accountName }})</div>
-          <div>잔액: {{ formatNumber(acc.balance) }} 원</div>
-        </div>
+            <div class="account-info">
+              <div class="bank-name">{{ acc.accountName }}</div> 
+              <div class="account-number">{{ acc.accountNumber }}</div> 
+              <div class="account-name">이름</div>
+            </div>
+            <div class="balance">
+                <div class="balance-amount">
+                    ₩ {{ formatNumber(acc.balance) }}
+                </div>
+                <div class="balance-label">잔액</div>
+            </div>
+            <div class="select-indicator">
+              <span v-if="selectedAccount?.accountId === acc.accountId" class="check-icon">✓</span>
+            </div>
+          </div>
         </div>
 
         <div class="action-buttons">
@@ -199,7 +321,7 @@ onMounted(() => {
         <div class="form-section">
           <div class="form-group">
             <label>받는 은행</label>
-            <select v-model="transferDTO.sendBankCode">
+            <select v-model="transferDTO.sendBankCode" class="form-input">
             <option value="">은행 선택</option>
             <option v-for="bank in bankList" 
                     :key="bank.code" 
@@ -211,7 +333,7 @@ onMounted(() => {
 
           <div class="form-group">
             <label>받는 분 계좌번호</label>
-            <input type="text" v-model="transferDTO.payeeAccountNumber" placeholder="계좌번호"/>
+            <input type="text" v-model="transferDTO.payeeAccountNumber" placeholder="계좌번호" class="form-input"/>
           </div>
 
           <!-- <div class="form-group">
@@ -222,7 +344,7 @@ onMounted(() => {
           <div class="form-group">
             <label>금액</label>
             <div class="amount-input-group">
-              <input type="number" v-model.number="transferDTO.transactionAmount" placeholder="0"/>
+              <input type="number" v-model.number="transferDTO.transactionAmount" placeholder="0" class="form-input amount-input"/>
               <span class="currency">원</span>
             </div>
             <div class="amount-display">
@@ -286,13 +408,206 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- 사기 민원 체크 경고 박스 (3건 이상일 때만 노출) -->
+        <div
+          v-if="isFraudHighRisk"
+          class="fraud-warning"
+          :class="{ danger: isFraudHighRisk }"
+        >
+          <span class="fraud-icon">⚠️</span>
+          <span class="fraud-text">{{ fraudCheckMessage }}</span>
+        </div>
+
+        <!-- 이상징후 점수 표시 -->
+        <div class="anomaly-section" v-if="anomalyScore && !isFraudHighRisk">
+          <div class="anomaly-header">
+            <div class="anomaly-title-section">
+              <h3>이상탐지 결과</h3>
+              <button
+                class="help-icon"
+                @click="showScoreModal = true"
+                title="점수 기준 보기"
+              >
+                <span class="help-text">?</span>
+              </button>
+            </div>
+            <div class="anomaly-badge" :class="anomalyLevel">
+              <span class="badge-text">{{ anomalyLabel }}</span>
+              <span
+                v-if="
+                  anomalyScore?.result?.totalScore !== null &&
+                  anomalyScore?.result?.totalScore !== undefined
+                "
+                class="badge-score"
+              >
+                {{ anomalyScore.result.totalScore }}
+              </span>
+            </div>
+          </div>
+          <!-- 레벨별 상세 안내 메시지 -->
+          <div v-if="anomalyLevel === 'normal'" class="anomaly-note success">
+            거래가 안전하게 확인되었습니다.
+          </div>
+          <div
+            v-else-if="anomalyLevel === 'caution'"
+            class="anomaly-note caution"
+          >
+            <p>
+              거래의 일부 요소가 위험 신호를 보였습니다. 계속 진행하시겠습니까?
+            </p>
+            <ul class="risk-list">
+              <li v-for="risk in riskFactors" :key="risk">{{ risk }}</li>
+            </ul>
+          </div>
+          <div v-else-if="anomalyLevel === 'high'" class="anomaly-note high">
+            <p>
+              거래의 여러 요소에서 위험 신호가 감지되어 자동으로 지연
+              처리됩니다.
+            </p>
+            <p>또한, 보호자/관리자에게 알림이 발송됩니다.</p>
+          </div>
+          <div class="anomaly-toggle">
+            <button
+              class="score-toggle-btn"
+              @click="showScoreDetails = !showScoreDetails"
+            >
+              <span class="chevron">{{ showScoreDetails ? '▾' : '▸' }}</span>
+              <span class="label-text">점수 보기</span>
+            </button>
+          </div>
+          <div
+            class="anomaly-breakdown"
+            v-if="anomalyScore?.result && showScoreDetails"
+          >
+            <div class="breakdown-row">
+              <span class="label">이전 송금 점수</span>
+              <span class="value">{{
+                anomalyScore.result.previousTransferScore
+              }}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">송금액 점수</span>
+              <span class="value">{{
+                anomalyScore.result.largeAmountScore
+              }}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">송금 시각 점수</span>
+              <span class="value">{{
+                anomalyScore.result.nightTimeScore
+              }}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">송금 횟수 점수</span>
+              <span class="value">{{
+                anomalyScore.result.dailyFrequencyScore
+              }}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">즐겨찾기 점수</span>
+              <span class="value">{{
+                anomalyScore.result.favoriteAccountScore
+              }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이상징후 로딩 -->
+        <div v-if="isLoadingAnomaly" class="anomaly-loading">
+          <div class="loading-spinner"></div>
+          <span>이상징후 점수 계산 중...</span>
+        </div>
+
         <div class="action-buttons">
           <button class="btn-secondary" @click="prevStep">이전</button>
           <button class="btn-primary" @click="confirmTransfer">이체하기</button>
         </div>
       </div><!-- end 3단계-->
-
     </div>
+
+    <!-- 점수 기준 모달창 -->
+    <div
+      v-if="showScoreModal"
+      class="modal-overlay"
+      @click="showScoreModal = false"
+    >
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>이상탐지 점수 기준</h3>
+          <button class="modal-close" @click="showScoreModal = false">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- 점수 계산 기준 설명 -->
+          <div class="score-explanation">
+            <h4>점수 계산 기준</h4>
+            <p class="explanation-text">
+              거래의 안전성을 확인하기 위해 아래 기준으로 점수가 계산됩니다.<br />
+              점수가 높을수록 위험 가능성이 커집니다. (총점 60점)
+            </p>
+
+            <div class="score-breakdown">
+              <div class="breakdown-item">
+                <span class="breakdown-label">이전 송금 점수 (15점)</span>
+                <span class="breakdown-desc"
+                  >최근 1년 이내에 해당 계좌로 송금한 적이 없으면 점수
+                  부여</span
+                >
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">송금액 점수 (20점)</span>
+                <span class="breakdown-desc"
+                  >1회 송금 금액이 50만 원 이상이거나, 최근 30일 평균 송금액의
+                  2배 이상이면 점수 부여</span
+                >
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">송금 시간 점수 (10점)</span>
+                <span class="breakdown-desc"
+                  >밤 10시부터 새벽 6시 사이에 송금하면 점수 부여</span
+                >
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">송금 횟수 점수 (10점)</span>
+                <span class="breakdown-desc"
+                  >같은 날 2회 이상 송금했을 경우 점수 부여</span
+                >
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">즐겨찾기 점수 (5점)</span>
+                <span class="breakdown-desc"
+                  >해당 계좌가 즐겨찾기에 등록되지 않은 경우 점수 부여</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- 점수 단계 해석 -->
+          <div class="score-criteria">
+            <h4>점수 단계 해석</h4>
+            <div class="criteria-summary">
+              <div class="criteria-row normal">
+                <span class="criteria-range">Score < 30</span>
+                <span class="criteria-label">정상</span>
+              </div>
+              <div class="criteria-row caution">
+                <span class="criteria-range">30 ≤ Score < 50</span>
+                <span class="criteria-label">주의/안심경고</span>
+              </div>
+              <div class="criteria-row high">
+                <span class="criteria-range">50 ≤ Score ≤ 60</span>
+                <span class="criteria-label">고위험</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" @click="showScoreModal = false">
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -988,4 +1303,421 @@ onMounted(() => {
     gap: 12px;
   }
 }
+
+/* ---- 이상탐지 관련 ---- */
+/* 이상징후 점수 섹션 */
+.anomaly-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+}
+
+.anomaly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.anomaly-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--kb-gray);
+  margin: 0;
+  letter-spacing: -0.2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+.anomaly-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.anomaly-badge.normal {
+  background: var(--success);
+  color: var(--white);
+}
+.anomaly-badge.caution {
+  background: var(--kb-yellow-negative);
+  color: var(--gray-900);
+}
+.anomaly-badge.high {
+  background: var(--danger);
+  color: var(--white);
+}
+
+.badge-score {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+.anomaly-description {
+  font-size: 13px;
+  color: var(--gray-700);
+  margin-bottom: 10px;
+}
+
+/* 레벨별 안내 메모 */
+.anomaly-note {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid var(--gray-200);
+}
+.anomaly-note.success {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #a5d6a7;
+}
+.anomaly-note.caution {
+  background: #fff8e1;
+  color: #6a4f00;
+  border-color: #ffe082;
+}
+.anomaly-note.high {
+  background: #ffebee;
+  color: #b71c1c;
+  border-color: #ef9a9a;
+}
+
+.risk-list {
+  margin: 6px 0 6px 16px;
+}
+.risk-list li {
+  list-style: disc;
+  margin: 2px 0;
+}
+
+.anomaly-breakdown {
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+/* 점수 토글 버튼 */
+.anomaly-toggle {
+  display: flex;
+  justify-content: flex-start;
+  margin: 6px 0 10px 0;
+}
+.score-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--gray-300);
+  background: var(--white);
+  color: var(--gray-800);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+.score-toggle-btn:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-400);
+}
+.score-toggle-btn:active {
+  transform: translateY(1px);
+}
+.score-toggle-btn .chevron {
+  width: 14px;
+  display: inline-block;
+  text-align: center;
+  color: var(--kb-gray);
+}
+.score-toggle-btn .label-text {
+  letter-spacing: -0.2px;
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.breakdown-row:last-child {
+  border-bottom: none;
+}
+
+.breakdown-row .label {
+  font-size: 12px;
+  color: var(--gray-600);
+}
+.breakdown-row .value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.anomaly-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+  color: var(--gray-600);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 사기 민원 경고 박스 */
+.fraud-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300);
+  background: #fff1f2; /* 연한 빨간 배경 */
+  color: #b91c1c; /* 짙은 빨강 텍스트 */
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.fraud-warning.danger {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #991b1b;
+}
+.fraud-icon {
+  font-size: 16px;
+}
+.fraud-text {
+  font-size: 13px;
+}
+
+/* 이상탐지 제목 섹션 */
+.anomaly-title-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.help-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--gray-400);
+  background: var(--white);
+  color: var(--gray-600);
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-icon:hover {
+  background: var(--kb-yellow-positive);
+  color: var(--white);
+  border-color: var(--kb-yellow-positive);
+  transform: scale(1.1);
+}
+
+.help-text {
+  line-height: 1;
+}
+
+/* 모달창 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 100%;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: var(--gray-200);
+  color: var(--gray-800);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+/* 점수 계산 기준 설명 스타일 */
+.score-explanation {
+  margin-bottom: 24px;
+}
+
+.score-explanation h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.explanation-text {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.score-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.breakdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--gray-50);
+  border-radius: 4px;
+  border-left: 3px solid #605850;
+}
+
+.breakdown-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.breakdown-desc {
+  font-size: 11px;
+  color: var(--gray-600);
+  line-height: 1.3;
+}
+
+.score-criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.score-criteria h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.criteria-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.criteria-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--gray-50);
+  border-radius: 4px;
+  border-left: 3px solid var(--gray-300);
+}
+
+.criteria-row.normal {
+  border-left-color: #10b981;
+}
+
+.criteria-row.caution {
+  border-left-color: #f59e0b;
+}
+
+.criteria-row.high {
+  border-left-color: #ef4444;
+}
+
+.criteria-row .criteria-range {
+  font-size: 12px;
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+.criteria-row .criteria-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: flex-end;
+}
+
 </style>
