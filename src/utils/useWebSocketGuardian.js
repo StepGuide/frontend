@@ -1,19 +1,15 @@
 // ✅ src/utils/useWebSocketGuardian.js
-if (typeof global === 'undefined') {
-  window.global = window;
-}
-
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { ref } from "vue";
 
-export const useWebSocketGuardian = () => {
+export const useWebSocketGuardian = (initialCode = null) => {
   const connected = ref(false);
   const userState = ref(null);
   const highlightState = ref(null);
   const guardianMessage = ref("");
   let subscriptions = [];
-  let currentCode = null;
+  let currentCode = initialCode;
 
   const client = new Client({
     webSocketFactory: () => new SockJS("/ws"),
@@ -22,28 +18,23 @@ export const useWebSocketGuardian = () => {
     onConnect: () => {
       connected.value = true;
       console.log("✅ 보호자 WebSocket 연결됨");
-
-      if (!currentCode) return;
-
-      // ✅ 연결 후 구독 경로 설정
-      subscribeToTopics(currentCode);
       
-      // 보호자 연결 알림을 사용자에게 전송
-      setTimeout(() => {
-        sendMessageToUser("보호자가 연결되었습니다. 도움이 필요하시면 언제든 말씀해주세요.");
-      }, 500);
+      // 코드가 있는 경우에만 구독
+      if (currentCode) {
+        setupSubscriptions(currentCode);
+      }
     },
-    onStompError: (frame) => {
-      console.error("❌ STOMP 오류:", frame.headers["message"]);
-    },
+    onStompError: (frame) =>
+      console.error("❌ STOMP 오류:", frame.headers["message"]),
     onWebSocketClose: () => {
       connected.value = false;
       console.warn("🔌 WebSocket 종료");
     },
   });
 
-  // ✅ 동적 subscribe 함수
-  const subscribeToTopics = (code) => {
+  const setupSubscriptions = (code) => {
+    console.log("📡 보호자 구독 설정:", code);
+    
     subscriptions.push(
       client.subscribe(`/topic/state/${code}`, (msg) => {
         const data = JSON.parse(msg.body);
@@ -66,24 +57,20 @@ export const useWebSocketGuardian = () => {
         guardianMessage.value = msg.body;
       })
     );
-
-    subscriptions.push(
-      client.subscribe(`/topic/disconnect/${code}`, (msg) => {
-        console.log("📥 연결 해제 신호 수신:", msg.body);
-        if (msg.body === "USER_DISCONNECT") {
-          console.log("🔌 사용자가 연결을 해제했습니다. GuardianView 연결 해제 처리");
-          disconnect();
-        }
-      })
-    );
   };
 
-  const connect = (code) => {
-    currentCode = code;
-    console.log(`🔗 보호자가 코드 ${code}로 연결 시도`);
-    client.activate();
+  const connect = (code = null) => {
+    if (code) {
+      currentCode = code;
+    }
+    
+    if (!client.active) {
+      client.activate();
+    } else if (currentCode) {
+      // 이미 연결되어 있다면 새 코드로 구독만 설정
+      setupSubscriptions(currentCode);
+    }
   };
-
   const disconnect = () => {
     subscriptions.forEach((s) => s.unsubscribe());
     subscriptions = [];
@@ -92,18 +79,13 @@ export const useWebSocketGuardian = () => {
     userState.value = null;
     highlightState.value = null;
     guardianMessage.value = "";
-    currentCode = null;
   };
 
   const sendMessageToUser = (text) => {
     if (currentCode) {
-      console.log(`📤 보호자 메시지 전송: ${text} (코드: ${currentCode})`);
-      client.publish({
-        destination: `/app/message/${currentCode}`,
-        body: text,
-      });
+      client.publish({ destination: `/app/message/${currentCode}`, body: text });
     } else {
-      console.error('❌ 현재 코드가 없어서 메시지를 보낼 수 없습니다');
+      console.warn("⚠️ 코드가 설정되지 않아 메시지를 보낼 수 없습니다");
     }
   };
 
@@ -115,5 +97,6 @@ export const useWebSocketGuardian = () => {
     highlightState,
     guardianMessage,
     connected,
+    client, // WebRTC 시그널링을 위해 클라이언트 노출
   };
 };
