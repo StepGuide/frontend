@@ -3,13 +3,13 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { ref } from "vue";
 
-export const useWebSocketUser = (code = null) => {
+export const useWebSocketUser = (initialCode = null) => {
   const connected = ref(false);
   const lastMessage = ref("");
   const guardianMessage = ref("");
   let pongSubscription = null;
   let subscriptions = [];
-  let currentCode = ref(code);
+  let currentCode = initialCode;
 
   const client = new Client({
     webSocketFactory: () => new SockJS("/ws"),
@@ -19,23 +19,15 @@ export const useWebSocketUser = (code = null) => {
       console.log("✅ WebSocket 연결 성공");
       connected.value = true;
 
-      // 기존 구독 정리
-      subscriptions.forEach((s) => s.unsubscribe());
-      subscriptions = [];
-
       pongSubscription = client.subscribe("/topic/pong", (message) => {
         lastMessage.value = message.body;
         console.log("📥 pong 수신:", message.body);
       });
 
-      // 보호자 메시지 구독
-      const sub = client.subscribe(`/topic/message/${currentCode.value}`, (msg) => {
-        console.log("📥 보호자 메시지 수신:", msg.body);
-        guardianMessage.value = msg.body;
-      });
-      subscriptions.push(sub);
-      
-      console.log(`🔔 메시지 구독 경로: /topic/message/${currentCode.value}`);
+      // 코드가 있는 경우에만 구독
+      if (currentCode) {
+        setupSubscriptions(currentCode);
+      }
     },
     onStompError: (frame) =>
       console.error("❌ STOMP 오류:", frame.headers["message"]),
@@ -45,13 +37,31 @@ export const useWebSocketUser = (code = null) => {
     },
   });
 
-  const connect = (newCode = null) => {
-    if (newCode) {
-      currentCode.value = newCode;
-      console.log(`🔗 웹소켓 연결 시도 (코드: ${newCode})`);
+  const setupSubscriptions = (code) => {
+    console.log("📡 사용자 구독 설정:", code);
+    
+    // 보호자 메시지 구독
+    const sub = client.subscribe(`/topic/message/${code}`, (msg) => {
+      console.log("📥 보호자 메시지 수신:", msg.body);
+      guardianMessage.value = msg.body;
+    });
+    subscriptions.push(sub);
+  };
+
+  const connect = (code = null) => {
+    if (code) {
+      currentCode = code;
+    }
+    
+    if (!client.active) {
       client.activate();
-    } else {
-      console.log('❌ 코드가 없어서 웹소켓 연결하지 않음');
+    } else if (currentCode) {
+      // 기존 구독 해제
+      subscriptions.forEach((s) => s.unsubscribe());
+      subscriptions = [];
+      
+      // 새 코드로 구독 설정
+      setupSubscriptions(currentCode);
     }
   };
 
@@ -71,30 +81,21 @@ export const useWebSocketUser = (code = null) => {
   };
 
   const sendState = (state) => {
-    if (!connected.value) return;
+    if (!connected.value || !currentCode) return;
     client.publish({
-      destination: `/app/state/${currentCode.value}`,
+      destination: `/app/state/${currentCode}`,
       body: JSON.stringify(state),
     });
     console.log("📤 사용자 상태 전송됨:", state);
   };
 
   const sendHighlight = (highlight) => {
-    if (!connected.value) return;
+    if (!connected.value || !currentCode) return;
     client.publish({
-      destination: `/app/state/highlight/${currentCode.value}`,
+      destination: `/app/state/highlight/${currentCode}`,
       body: JSON.stringify(highlight),
     });
     console.log("📤 강조 상태 전송됨:", highlight);
-  };
-
-  const sendDisconnectSignal = () => {
-    if (!connected.value || !currentCode.value) return;
-    client.publish({
-      destination: `/app/disconnect/${currentCode.value}`,
-      body: "USER_DISCONNECT",
-    });
-    console.log("📤 연결 해제 신호 전송됨:", currentCode.value);
   };
 
   return {
@@ -103,9 +104,9 @@ export const useWebSocketUser = (code = null) => {
     sendPing,
     sendState,
     sendHighlight,
-    sendDisconnectSignal,
     lastMessage,
     connected,
     guardianMessage,
+    client, // WebRTC 시그널링을 위해 클라이언트 노출
   };
 };

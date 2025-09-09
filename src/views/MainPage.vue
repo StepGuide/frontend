@@ -20,6 +20,15 @@
       </div>
     </nav>
 
+    <!-- 숨겨진 비디오 요소 (WebRTC용) -->
+    <video 
+      ref="localVideo" 
+      autoplay 
+      muted 
+      playsinline
+      style="display: none;"
+    ></video>
+
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
       <!-- 환영 메시지 -->
@@ -68,7 +77,10 @@
                 </div>
               </button>
               
-              <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+              <div v-if="errorMessage" class="error-message">
+                <span class="error-icon">⚠️</span>
+                <span>{{ errorMessage }}</span>
+              </div>
             </div>
             
             <!-- 코드가 생성된 상태 -->
@@ -107,6 +119,8 @@
                   <div>보호자 연결됨: {{ isGuardianConnected }}</div>
                   <div>연결 해제 신호: {{ helpCodeStore.connectionTerminated }}</div>
                   <div>코드: {{ helpCode }}</div>
+                  <div>화면 공유 중: {{ isSharing }}</div>
+                  <div>WebRTC 연결됨: {{ isSharing }}</div>
                 </div>
               </div>
               
@@ -119,6 +133,21 @@
                   <span v-if="isLoading">생성 중...</span>
                   <span v-else>새 코드</span>
                 </button>
+                
+                <!-- 화면 공유 버튼 -->
+                <button 
+                  v-if="isGuardianConnected"
+                  class="action-btn screen-share" 
+                  :class="{ 'sharing': isSharing }"
+                  @click="toggleScreenShare"
+                  :disabled="!isGuardianConnected || !isWebSocketConnected"
+                >
+                  <span class="btn-icon">{{ isSharing ? '🛑' : '📺' }}</span>
+                  <span class="btn-text">
+                    {{ isSharing ? '화면 공유 중지' : '화면 공유 시작' }}
+                  </span>
+                </button>
+                
                 <button 
                   class="action-btn" 
                   :class="{ 'primary': !generatedCode, 'danger': generatedCode }"
@@ -253,12 +282,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createHelpRequest } from '@/api/index'
 import { getBankInfo, extractBankCode } from '@/utils/bankMapping'
 import { useHelpCodeStore } from '@/stores/helpCode'
 import { useWebSocketUser } from '@/utils/useWebSocketUser'
+import { useScreenShareStore } from '@/stores/screenShare'
 
 const router = useRouter()
 const isLoading = ref(false)
@@ -275,16 +305,52 @@ const helpCode = computed(() => {
 })
 
 // 웹소켓 연결 (동적으로 코드 변경 감지)
-const { connected: isWebSocketConnected, guardianMessage, connect: connectWebSocket, disconnect: disconnectWebSocket } = useWebSocketUser(null)
+const { 
+  connected: isWebSocketConnected, 
+  guardianMessage, 
+  connect: connectWebSocket, 
+  disconnect: disconnectWebSocket,
+  client // 웹소켓 클라이언트 추가
+} = useWebSocketUser(null)
+
+// 화면 공유 store 사용
+const screenShareStore = useScreenShareStore()
+const localVideo = ref(null)
+
+// store에서 상태와 메서드 가져오기
+const { isSharing, isConnected } = screenShareStore
 
 // 보호자 연결 상태 (실제 보호자 메시지 수신 여부로 판단)
 const isGuardianConnected = ref(false)
+
+// WebRTC 상태는 useWebRTC에서 관리됨
 
 // 보호자 메시지 감지하여 연결 상태 업데이트
 watch(guardianMessage, (newMessage) => {
   if (newMessage && newMessage.trim()) {
     console.log('📨 MainPage 보호자 메시지 수신:', newMessage)
-    isGuardianConnected.value = true
+    
+    // 보호자 연결 신호인지 확인
+    if (newMessage === 'GUARDIAN_CONNECTED') {
+      isGuardianConnected.value = true
+      console.log('✅ 보호자 연결 감지됨!')
+      // 사용자에게 연결 확인 응답 보내기
+      if (client && client.connected && helpCode.value) {
+        setTimeout(() => {
+          client.publish({
+            destination: `/app/message/${helpCode.value}`,
+            body: 'USER_CONNECTION_CONFIRMED'
+          })
+          console.log('📤 사용자 연결 확인 응답 전송됨')
+        }, 500)
+      }
+    } else if (newMessage === 'GUARDIAN_DISCONNECTED') {
+      isGuardianConnected.value = false
+      console.log('❌ 보호자 연결 해제 감지됨!')
+    } else {
+      // 일반 메시지도 연결 상태로 판단
+      isGuardianConnected.value = true
+    }
   }
 })
 
@@ -296,8 +362,18 @@ watch(helpCode, (newCode, oldCode) => {
     disconnectWebSocket()
     // 보호자 연결 상태 초기화
     isGuardianConnected.value = false
+    
+    // WebRTC 코드 업데이트 (store를 통해)
+    if (screenShareStore.helpCode !== newCode) {
+      // 새로운 코드로 WebRTC 인스턴스 재초기화
+      screenShareStore.initializeWebRTC(newCode, client)
+      console.log('🔄 WebRTC 코드 업데이트됨:', newCode)
+    }
+    
     setTimeout(() => {
       connectWebSocket(newCode)
+      // WebRTC 시그널링도 재설정
+      setupWebRTCSignaling()
       console.log('🔗 MainPage 새 코드로 웹소켓 재연결:', newCode)
     }, 500)
   }
@@ -369,6 +445,111 @@ const copyCode = async () => {
     errorMessage.value = '코드 복사에 실패했습니다.'
   } finally {
     isCopying.value = false
+  }
+}
+
+// 화면 공유 토글
+const toggleScreenShare = async () => {
+  try {
+    // WebSocket 연결 상태 확인
+    if (!isWebSocketConnected.value) {
+      errorMessage.value = 'WebSocket에 연결되지 않았습니다. 먼저 도움 요청 코드를 생성해주세요.';
+      return;
+    }
+
+    // 보호자 연결 상태 확인
+    if (!isGuardianConnected.value) {
+      errorMessage.value = '보호자가 연결되지 않았습니다. 보호자가 연결될 때까지 기다려주세요.';
+      return;
+    }
+
+    if (isSharing.value) {
+      // 화면 공유 중지
+      screenShareStore.stopScreenShare()
+      console.log('🛑 화면 공유 중지됨')
+    } else {
+      // 화면 공유 시작
+      try {
+        await screenShareStore.startScreenShare()
+        console.log('📺 화면 공유 시작됨')
+      } catch (error) {
+        console.error('❌ 화면 공유 시작 실패:', error)
+        errorMessage.value = '화면 공유에 실패했습니다: ' + error.message
+        throw error
+      }
+    }
+  } catch (error) {
+    console.error('❌ 화면 공유 토글 실패:', error)
+    errorMessage.value = '화면 공유에 실패했습니다: ' + error.message
+  }
+}
+
+// WebRTC 시그널링 메시지 처리
+const setupWebRTCSignaling = () => {
+  if (!client) {
+    console.log('⚠️ STOMP 클라이언트가 아직 준비되지 않음');
+    return;
+  }
+
+  // STOMP 연결 상태 확인
+  if (!client.connected) {
+    console.log('⚠️ STOMP 연결이 아직 완료되지 않음. 2초 후 재시도...');
+    setTimeout(() => {
+      setupWebRTCSignaling();
+    }, 2000);
+    return;
+  }
+
+  console.log('✅ STOMP 연결 확인됨. WebRTC 시그널링 구독 시작...');
+
+  // store에서 WebRTC 메서드 가져오기
+  const webrtcMethods = screenShareStore.getWebRTCMethods()
+  
+  if (!webrtcMethods || !webrtcMethods.handleAnswer) {
+    console.warn('⚠️ WebRTC 메서드를 사용할 수 없습니다. WebRTC 인스턴스를 먼저 초기화해주세요.');
+    return;
+  }
+
+  try {
+    // Answer 수신
+    client.subscribe(`/topic/webrtc/answer/${helpCode.value || '123456'}`, (message) => {
+      console.log('📥 Answer 메시지 수신:', message.body);
+      const data = JSON.parse(message.body);
+      if (data.type === 'answer') {
+        console.log('✅ Answer 타입 확인됨, 처리 시작...');
+        webrtcMethods.handleAnswer(new RTCSessionDescription(data));
+      } else {
+        console.warn('⚠️ 잘못된 Answer 타입:', data.type);
+      }
+    });
+
+    // ICE 후보 수신
+    client.subscribe(`/topic/webrtc/ice/${helpCode.value || '123456'}`, (message) => {
+      console.log('📥 ICE 후보 메시지 수신:', message.body);
+      const data = JSON.parse(message.body);
+      if (data.type === 'ice-candidate') {
+        console.log('✅ ICE 후보 타입 확인됨, 처리 시작...');
+        webrtcMethods.handleIceCandidate(data.candidate);
+      } else {
+        console.warn('⚠️ 잘못된 ICE 후보 타입:', data.type);
+      }
+    });
+
+    // 연결 종료 수신
+    client.subscribe(`/topic/webrtc/end/${helpCode.value || '123456'}`, (message) => {
+      console.log('📥 연결 종료 메시지 수신:', message.body);
+      const data = JSON.parse(message.body);
+      if (data.type === 'end') {
+        console.log('✅ 연결 종료 타입 확인됨, 처리 시작...');
+        webrtcMethods.handleEnd();
+      } else {
+        console.warn('⚠️ 잘못된 연결 종료 타입:', data.type);
+      }
+    });
+
+    console.log('✅ WebRTC 시그널링 구독 완료');
+  } catch (error) {
+    console.error('❌ WebRTC 시그널링 구독 실패:', error);
   }
 }
 
@@ -447,6 +628,35 @@ const goToPractice = () => {
 const goToAccountFavorites = () => {
   router.push('/account-favorites')
 }
+
+// 컴포넌트 마운트 시 초기화
+onMounted(() => {
+  console.log('🚀 MainPage 마운트됨')
+  
+  // WebRTC 인스턴스 초기화를 위한 함수
+  const initializeWebRTCIfReady = () => {
+    if (helpCode.value && client) {
+      console.log('🔧 WebRTC 인스턴스 초기화:', helpCode.value)
+      const webrtcInstance = screenShareStore.initializeWebRTC(helpCode.value, client)
+      
+      // localVideo ref 연결
+      if (webrtcInstance && webrtcInstance.localVideo) {
+        webrtcInstance.localVideo.value = localVideo.value
+      }
+      
+      // WebRTC 시그널링 설정
+      setTimeout(() => {
+        setupWebRTCSignaling(webrtcInstance);
+      }, 1000);
+    } else {
+      console.log('⏳ WebRTC 초기화 대기 중... (helpCode:', helpCode.value, ', client:', !!client, ')')
+      // 1초 후 재시도
+      setTimeout(initializeWebRTCIfReady, 1000);
+    }
+  }
+  
+  initializeWebRTCIfReady()
+})
 </script>
 
 <style scoped>
@@ -798,11 +1008,23 @@ const goToAccountFavorites = () => {
 }
 
 .error-message {
-  color: var(--danger);
-  font-size: 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 16px;
   margin-top: 12px;
-  text-align: center;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.error-icon {
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 /* 코드 생성 섹션 */
@@ -1476,6 +1698,41 @@ const goToAccountFavorites = () => {
   .action-buttons {
     flex-direction: column;
     gap: 12px;
+  }
+  
+  /* 화면 공유 버튼 스타일 */
+  .action-btn.screen-share {
+    background: var(--kb-blue);
+    color: var(--white);
+    border: 2px solid var(--kb-blue);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  .action-btn.screen-share:hover {
+    background: var(--kb-blue-dark);
+    border-color: var(--kb-blue-dark);
+  }
+  
+  .action-btn.screen-share.sharing {
+    background: var(--kb-danger);
+    border-color: var(--kb-danger);
+  }
+  
+  .action-btn.screen-share.sharing:hover {
+    background: #d32f2f;
+    border-color: #d32f2f;
+  }
+  
+  .btn-icon {
+    font-size: 16px;
+  }
+  
+  .btn-text {
+    font-size: 14px;
+    font-weight: 600;
   }
   
   .code-text {
