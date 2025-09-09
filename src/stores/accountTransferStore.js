@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getUserAccounts, validateTransfer, executeTransfer } from '@/api/accountTransferApi'
+import { getUserAccounts, validateTransfer, executeTransfer, getAccountTransactions } from '@/api/accountTransferApi'
 
 export const useTransferStore = defineStore('transfer', () => {
   // Step 상태
@@ -11,6 +11,9 @@ export const useTransferStore = defineStore('transfer', () => {
 
   // 선택된 출금 계좌
   const selectedAccount = ref(null)
+
+  // 선택된 계좌 거래내역
+  const transactions = ref([])
 
   // Step 2~3에서 사용할 DTO
   const transferDTO = ref({
@@ -37,6 +40,24 @@ export const useTransferStore = defineStore('transfer', () => {
     }
   }
 
+  // 선택 계좌 변경 및 거래내역 조회
+  const selectAccount = async (account) => {
+    selectedAccount.value = account
+    transferDTO.value.accountId = account.accountId
+    transferDTO.value.accountNumber = account.accountNumber
+    transferDTO.value.accountName = account.accountName
+    transferDTO.value.balance = account.balance
+    transferDTO.value.bankCode = account.bankCode
+
+    // 거래내역 불러오기
+    try {
+      transactions.value = await getAccountTransactions(account.accountId)
+    } catch (err) {
+      console.error('거래내역 조회 실패', err)
+      transactions.value = []
+    }
+  }
+
   // Step 2: 검증
   const validate = async () => {
     try {
@@ -50,12 +71,37 @@ export const useTransferStore = defineStore('transfer', () => {
   }
 
   // Step 3: 최종 이체
+//   const execute = async () => {
+//     try {
+//       const result = await executeTransfer(transferDTO.value)
+//       currentStep.value = 1
+//       selectedAccount.value = null
+//       transferDTO.value = {} // 초기화
+//       return result
+//     } catch (err) {
+//       console.error('이체 실패', err)
+//       throw err
+//     }
+//   }
   const execute = async () => {
     try {
       const result = await executeTransfer(transferDTO.value)
       currentStep.value = 1
       selectedAccount.value = null
-      transferDTO.value = {} // 초기화
+      transactions.value = [] // 거래내역 초기화
+      transferDTO.value = {
+        accountId: null,
+        userId: null,
+        accountNumber: '',
+        accountName: '',
+        balance: 0,
+        bankCode: '',
+        sendBankCode: '',
+        payeeAccountNumber: '',
+        transactionAmount: 0,
+        accountHolderName: '',
+        memo: ''
+      }
       return result
     } catch (err) {
       console.error('이체 실패', err)
@@ -75,8 +121,10 @@ export const useTransferStore = defineStore('transfer', () => {
     currentStep,
     accounts,
     selectedAccount,
+    transactions,
     transferDTO,
     fetchAccounts,
+    selectAccount,
     validate,
     execute,
     nextStep,
