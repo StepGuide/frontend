@@ -25,7 +25,12 @@
       ref="localVideo"
       autoplay
       muted
+      <video
+      ref="localVideo"
+      autoplay
+      muted
       playsinline
+      style="display: none"
       style="display: none"
     ></video>
 
@@ -277,7 +282,7 @@
             <div class="service-icon">📚</div>
             <h3>금융교육</h3>
             <p>안전한 금융 이용법</p>
-            <button class="service-btn">학습하기</button>
+            <button class="service-btn" @click="goToEducation">학습하기</button>
           </div>
         </div>
       </div>
@@ -395,8 +400,14 @@ watch(guardianMessage, (newMessage) => {
           });
           console.log('📤 사용자 연결 확인 응답 전송됨');
         }, 500);
+            body: 'USER_CONNECTION_CONFIRMED',
+          });
+          console.log('📤 사용자 연결 확인 응답 전송됨');
+        }, 500);
       }
     } else if (newMessage === 'GUARDIAN_DISCONNECTED') {
+      isGuardianConnected.value = false;
+      console.log('❌ 보호자 연결 해제 감지됨!');
       isGuardianConnected.value = false;
       console.log('❌ 보호자 연결 해제 감지됨!');
     } else {
@@ -490,6 +501,7 @@ const copyCode = async () => {
     isCopying.value = false;
   }
 };
+};
 
 // 화면 공유 토글
 const toggleScreenShare = async () => {
@@ -497,9 +509,13 @@ const toggleScreenShare = async () => {
     if (!isWebSocketConnected.value) {
       errorMessage.value =
         'WebSocket에 연결되지 않았습니다. 먼저 도움 요청 코드를 생성해주세요.';
+      errorMessage.value =
+        'WebSocket에 연결되지 않았습니다. 먼저 도움 요청 코드를 생성해주세요.';
       return;
     }
     if (!isGuardianConnected.value) {
+      errorMessage.value =
+        '보호자가 연결되지 않았습니다. 보호자가 연결될 때까지 기다려주세요.';
       errorMessage.value =
         '보호자가 연결되지 않았습니다. 보호자가 연결될 때까지 기다려주세요.';
       return;
@@ -512,13 +528,20 @@ const toggleScreenShare = async () => {
       try {
         await screenShareStore.startScreenShare();
         console.log('📺 화면 공유 시작됨');
+        await screenShareStore.startScreenShare();
+        console.log('📺 화면 공유 시작됨');
       } catch (error) {
+        console.error('❌ 화면 공유 시작 실패:', error);
+        errorMessage.value = '화면 공유에 실패했습니다: ' + error.message;
+        throw error;
         console.error('❌ 화면 공유 시작 실패:', error);
         errorMessage.value = '화면 공유에 실패했습니다: ' + error.message;
         throw error;
       }
     }
   } catch (error) {
+    console.error('❌ 화면 공유 토글 실패:', error);
+    errorMessage.value = '화면 공유에 실패했습니다: ' + error.message;
     console.error('❌ 화면 공유 토글 실패:', error);
     errorMessage.value = '화면 공유에 실패했습니다: ' + error.message;
   }
@@ -640,6 +663,7 @@ onMounted(() => {
 
       // localVideo ref 연결
       if (webrtcInstance && webrtcInstance.localVideo) {
+        webrtcInstance.localVideo.value = localVideo.value;
         webrtcInstance.localVideo.value = localVideo.value;
       }
 
