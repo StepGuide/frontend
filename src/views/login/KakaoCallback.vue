@@ -9,7 +9,9 @@
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import axios from 'axios';
-const plain = axios.create({ baseURL: '/', withCredentials: true });
+import { setupPushNotifications } from '@/firebase-init';
+import { ref } from 'vue';
+const plain = axios.create({ baseURL: '/api', withCredentials: true });
 
 const route = useRoute();
 const router = useRouter();
@@ -17,12 +19,14 @@ const auth = useAuthStore();
 
 const code = route.query.code;
 
+const showGuardianModal = ref(false);
+
 if (!code) {
   router.replace('/login');
 } else {
   (async () => {
     try {
-      const { data } = await plain.post('/api/auth/login/kakao', { code });
+      const { data } = await plain.post('/auth/login/kakao', { code });
 
       // Access 토큰 파싱
       const access =
@@ -34,7 +38,10 @@ if (!code) {
 
       // Pinia에 저장 -> 인터셉터가 이후 요청에 자동 부착
       auth.setToken(access);
-
+      console.log('[ACCESS]', access);
+      try {
+        await setupPushNotifications();
+      } catch {}
       router.replace('/');
     } catch (e) {
       // 실패 시 로그인 페이지로 복귀
