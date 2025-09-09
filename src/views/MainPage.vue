@@ -50,7 +50,7 @@
             </div>
 
             <!-- 코드가 생성되지 않은 상태 -->
-            <div v-if="!generatedCode" class="code-generation-section">
+            <div v-if="!helpCode" class="code-generation-section">
               <div class="generation-info">
                 <div class="info-item">
                   <span class="info-icon">🔐</span>
@@ -94,12 +94,17 @@
                 <div class="connection-status">
                   <div
                     class="status-indicator"
-                    :class="{ connected: isGuardianConnected }"
+                    :class="{ 
+                      connected: isGuardianConnected && !helpCodeStore.isCheckingConnection,
+                      checking: helpCodeStore.isCheckingConnection
+                    }"
                   >
                     <span class="status-dot"></span>
                     <span class="status-text">
                       {{
-                        isGuardianConnected
+                        helpCodeStore.isCheckingConnection
+                          ? '연결 상태 확인 중...'
+                          : isGuardianConnected
                           ? '보호자 연결됨'
                           : '보호자 연결 대기 중'
                       }}
@@ -109,7 +114,7 @@
 
                 <div class="code-label">연결 코드</div>
                 <div class="code-box">
-                  <span class="code-text">{{ generatedCode }}</span>
+                  <span class="code-text">{{ helpCode }}</span>
                   <button
                     class="copy-btn"
                     @click="copyCode"
@@ -166,11 +171,11 @@
                 
                 <button 
                   class="action-btn" 
-                  :class="{ 'primary': !generatedCode, 'danger': generatedCode }"
+                  :class="{ 'primary': !helpCode, 'danger': helpCode }"
                   @click="toggleConnection"
                   :disabled="!helpCode"
                 >
-                  <span v-if="generatedCode">연결 끊기</span>
+                  <span v-if="helpCode">연결 끊기</span>
                   <span v-else>연결하기</span>
                 </button>
               </div>
@@ -310,7 +315,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createHelpRequest } from '@/api/index'
+import { createHelpRequest, getHelpRequestStatus } from '@/api/index'
 import { getBankInfo, extractBankCode } from '@/utils/bankMapping'
 import { useHelpCodeStore } from '@/stores/helpCode'
 import { useWebSocketUser } from '@/utils/useWebSocketUser'
@@ -320,7 +325,6 @@ const router = useRouter();
 const isLoading = ref(false);
 const isCopying = ref(false);
 const errorMessage = ref('');
-const generatedCode = ref('');
 
 // 도움 요청 코드 store
 const helpCodeStore = useHelpCodeStore();
@@ -346,8 +350,8 @@ const localVideo = ref(null)
 // store에서 상태와 메서드 가져오기
 const { isSharing, isConnected } = screenShareStore
 
-// 보호자 연결 상태 (실제 보호자 메시지 수신 여부로 판단)
-const isGuardianConnected = ref(false)
+// 보호자 연결 상태는 store에서 관리됨
+const isGuardianConnected = computed(() => helpCodeStore.isGuardianConnected)
 
 // WebRTC 상태는 useWebRTC에서 관리됨
 
@@ -355,12 +359,18 @@ const isGuardianConnected = ref(false)
 watch(guardianMessage, (newMessage) => {
   if (newMessage && newMessage.trim()) {
     console.log('📨 MainPage 보호자 메시지 수신:', newMessage)
+    console.log('🔍 현재 상태:', {
+      helpCode: helpCode.value,
+      currentGuardianConnected: helpCodeStore.isGuardianConnected,
+      messageLength: newMessage.length,
+      messageType: typeof newMessage
+    })
     
     // 보호자 연결 신호인지 확인
     if (newMessage === 'GUARDIAN_CONNECTED') {
-      isGuardianConnected.value = true
+      helpCodeStore.setGuardianConnected(true)
       console.log('✅ 보호자 연결 감지됨!')
-      // 사용자에게 연결 확인 응답 보내기
+      // 사용자에게 연결 확인 응답 보내기 (지연 시간 단축)
       if (client && client.connected && helpCode.value) {
         setTimeout(() => {
           client.publish({
@@ -368,14 +378,35 @@ watch(guardianMessage, (newMessage) => {
             body: 'USER_CONNECTION_CONFIRMED'
           })
           console.log('📤 사용자 연결 확인 응답 전송됨')
-        }, 500)
+        }, 100) // 500ms → 100ms로 단축
       }
     } else if (newMessage === 'GUARDIAN_DISCONNECTED') {
-      isGuardianConnected.value = false
+      helpCodeStore.setGuardianConnected(false)
       console.log('❌ 보호자 연결 해제 감지됨!')
+    } else if (newMessage === 'GUARDIAN_CONNECTION_ALIVE') {
+      // 보호자 연결 상태 확인 응답
+      helpCodeStore.setGuardianConnected(true)
+      console.log('✅ 보호자 연결 상태 확인됨 (페이지 복원)')
+      
+      // 타임아웃 취소
+      if (window.guardianCheckTimeout) {
+        clearTimeout(window.guardianCheckTimeout)
+        window.guardianCheckTimeout = null
+        console.log('⏰ 보호자 연결 확인 타임아웃 취소됨')
+      }
     } else {
-      // 일반 메시지도 연결 상태로 판단
-      isGuardianConnected.value = true
+      // 일반 메시지 수신 시 연결 상태로 판단 (단, 빈 메시지나 시스템 메시지 제외)
+      if (newMessage.trim() && 
+          !newMessage.startsWith('SYSTEM_') && 
+          !newMessage.startsWith('ERROR_') &&
+          !newMessage.startsWith('USER_CONNECTION') && // 사용자가 보낸 연결 확인 메시지 제외
+          newMessage !== 'ping' && 
+          newMessage !== 'pong') {
+        helpCodeStore.setGuardianConnected(true)
+        console.log('✅ 보호자 일반 메시지 수신으로 연결 상태 확인됨:', newMessage)
+      } else {
+        console.log('⚠️ 시스템 메시지나 사용자 발신 메시지 무시됨:', newMessage)
+      }
     }
   }
 });
@@ -387,7 +418,7 @@ watch(helpCode, (newCode, oldCode) => {
     // 기존 연결 해제 후 새 코드로 재연결
     disconnectWebSocket()
     // 보호자 연결 상태 초기화
-    isGuardianConnected.value = false
+    helpCodeStore.setGuardianConnected(false)
     
     // WebRTC 코드 업데이트 (store를 통해)
     if (screenShareStore.helpCode !== newCode) {
@@ -404,6 +435,16 @@ watch(helpCode, (newCode, oldCode) => {
     }, 500)
   }
 }, { immediate: true })
+
+// WebSocket 연결 상태 감지 - 연결 완료 시 필요한 경우에만 보호자 상태 확인
+watch(isWebSocketConnected, (newConnected, oldConnected) => {
+  if (newConnected && !oldConnected && helpCode.value && !helpCodeStore.isGuardianConnected) {
+    console.log('🔗 WebSocket 연결 완료 감지, 보호자 상태 확인 시작')
+    setTimeout(() => {
+      checkGuardianConnectionStatus()
+    }, 200)
+  }
+})
 
 // 계좌 정보
 const accountNumber = ref('004-123456-78-90'); // KB국민은행 계좌번호
@@ -438,15 +479,14 @@ const generateHelpCode = async () => {
     const helpCode = await createHelpRequest(userId);
 
     console.log('생성된 도움 요청 코드:', helpCode);
-    generatedCode.value = helpCode;
-    // store에도 저장
+    // store에 저장
     helpCodeStore.setGeneratedCode(helpCode);
   } catch (error) {
     console.error('도움 요청 생성 실패:', error);
     errorMessage.value = '도움 요청 생성에 실패했습니다. 다시 시도해주세요.';
 
     // 에러 발생 시 기본 코드 생성
-    generatedCode.value = '123456';
+    helpCodeStore.setGeneratedCode('123456');
   } finally {
     isLoading.value = false;
   }
@@ -458,13 +498,63 @@ const generateNewCode = async () => {
   await generateHelpCode();
 };
 
+// WebSocket을 통한 보호자 연결 상태 확인
+const checkGuardianConnectionStatus = () => {
+  console.log('🔍 checkGuardianConnectionStatus 호출됨')
+  
+  if (!helpCode.value) {
+    console.log('⚠️ 도움 코드가 없어서 연결 상태 확인 불가')
+    helpCodeStore.setGuardianConnected(false)
+    return
+  }
+  
+  console.log('🔍 WebSocket을 통한 보호자 연결 상태 확인:', helpCode.value)
+  
+  // 초기 상태를 false로 설정하고 확인 시작 (중요!)
+  console.log('🔄 연결 상태 확인 시작 - false로 초기화')
+  helpCodeStore.setGuardianConnected(false)
+  helpCodeStore.setCheckingConnection(true)
+  
+  // WebSocket 연결 확인 후 보호자에게 상태 확인 메시지 전송
+  const attemptStatusCheck = () => {
+    if (client && client.connected && isWebSocketConnected.value) {
+      try {
+        console.log('📤 보호자 연결 상태 확인 요청 전송')
+        client.publish({
+          destination: `/app/message/${helpCode.value}`,
+          body: 'USER_CONNECTION_CHECK'
+        })
+        
+        // 1.5초 후에도 응답이 없으면 연결 해제 상태로 확정 (2초 → 1.5초로 단축)
+        const timeoutId = setTimeout(() => {
+          if (!helpCodeStore.isGuardianConnected) {
+            console.log('⚠️ 보호자 연결 확인 응답 없음 - 연결 해제 상태 확정')
+            helpCodeStore.setGuardianConnected(false)
+          }
+        }, 1500) // 2000ms → 1500ms로 단축
+        
+        // 응답을 받으면 타임아웃 취소하도록 ID 저장
+        window.guardianCheckTimeout = timeoutId
+      } catch (error) {
+        console.error('❌ 보호자 연결 상태 확인 실패:', error)
+        helpCodeStore.setGuardianConnected(false)
+      }
+    } else {
+      console.log('⏳ WebSocket 연결 대기 중...')
+      setTimeout(attemptStatusCheck, 300) // 500ms → 300ms로 단축
+    }
+  }
+  
+  attemptStatusCheck()
+};
+
 // 코드 복사
 const copyCode = async () => {
   try {
     isCopying.value = true;
-    await navigator.clipboard.writeText(generatedCode.value);
+    await navigator.clipboard.writeText(helpCode.value);
     // 복사 성공 피드백 (선택사항)
-    console.log('코드가 클립보드에 복사되었습니다:', generatedCode.value);
+    console.log('코드가 클립보드에 복사되었습니다:', helpCode.value);
   } catch (error) {
     console.error('코드 복사 실패:', error);
     errorMessage.value = '코드 복사에 실패했습니다.';
@@ -582,7 +672,6 @@ const setupWebRTCSignaling = () => {
 const toggleConnection = () => {
   console.log('🔌 MainPage toggleConnection 호출됨');
   console.log('🔌 MainPage isGuardianConnected:', isGuardianConnected.value);
-  console.log('🔌 MainPage generatedCode:', generatedCode.value);
   console.log('🔌 MainPage helpCode:', helpCode.value);
   console.log('🔌 MainPage store 상태:', {
     generatedCode: helpCodeStore.generatedCode,
@@ -591,12 +680,12 @@ const toggleConnection = () => {
   });
 
   // 코드가 생성되어 있으면 연결 끊기로 처리
-  if (generatedCode.value) {
+  if (helpCode.value) {
     console.log('🔌 MainPage 연결 끊기 시작 (코드 존재)');
 
     // 연결 끊기 처리
     disconnectWebSocket();
-    isGuardianConnected.value = false;
+    helpCodeStore.setGuardianConnected(false);
     helpCodeStore.disableConnection(); // store에 연결 비활성화 상태 저장
     helpCodeStore.terminateConnection(); // GuardianView에 연결 해제 신호 전송
 
@@ -610,7 +699,6 @@ const toggleConnection = () => {
     );
 
     // 연결 끊기 시 초기화면으로 돌아가기
-    generatedCode.value = '';
     helpCodeStore.clearGeneratedCode();
 
     console.log('🔌 MainPage 코드 초기화 완료');
@@ -666,6 +754,72 @@ const goToAccountFavorites = () => {
 // 컴포넌트 마운트 시 초기화
 onMounted(() => {
   console.log('🚀 MainPage 마운트됨')
+  
+  // 지능적인 초기 상태 설정
+  console.log('🔄 현재 상태 확인:', {
+    helpCode: helpCode.value,
+    isWebSocketConnected: isWebSocketConnected.value,
+    isGuardianConnected: helpCodeStore.isGuardianConnected
+  })
+  
+  // WebSocket이 이미 연결되어 있고 보호자도 연결된 상태라면 초기화하지 않음
+  if (helpCode.value && isWebSocketConnected.value && client?.connected && helpCodeStore.isGuardianConnected) {
+    console.log('✅ 이미 연결된 상태 - 초기화 건너뛰기')
+    // 상태 유지, 추가 확인 불필요
+  } else {
+    // 연결 상태가 불확실한 경우에만 초기화 및 확인
+    console.log('🔄 연결 상태 불확실 - 초기화 후 확인')
+    helpCodeStore.setGuardianConnected(false)
+    
+    if (helpCode.value) {
+      helpCodeStore.setCheckingConnection(true)
+    }
+  }
+  
+  if (helpCode.value) {
+    console.log('🔄 기존 코드 감지:', helpCode.value)
+  }
+  
+  // 기존 코드가 있다면 연결 상태 복원 (필요한 경우에만)
+  if (helpCode.value && !helpCodeStore.isGuardianConnected) {
+    console.log('🔄 기존 코드 감지, 연결 상태 복원 시작:', helpCode.value)
+    
+    // 즉시 상태 확인 시도 (WebSocket이 이미 연결되어 있을 수 있음)
+    if (isWebSocketConnected.value && client && client.connected) {
+      console.log('✅ WebSocket 이미 연결됨 - 즉시 상태 확인')
+      setTimeout(() => {
+        checkGuardianConnectionStatus()
+      }, 100) // 즉시 확인
+    } else {
+      // WebSocket 재연결을 안전하게 시도
+      const attemptReconnection = () => {
+        if (!isWebSocketConnected.value) {
+          console.log('🔗 WebSocket 재연결 시도')
+          try {
+            connectWebSocket(helpCode.value)
+            
+            // 연결 완료 후 보호자 상태 확인
+            setTimeout(() => {
+              checkGuardianConnectionStatus()
+            }, 600)
+            
+          } catch (error) {
+            console.error('❌ WebSocket 재연결 실패:', error)
+          }
+        } else {
+          console.log('✅ WebSocket 재연결 완료 - 상태 확인')
+          setTimeout(() => {
+            checkGuardianConnectionStatus()
+          }, 200)
+        }
+      }
+      
+      // 300ms 후 재연결 시도
+      setTimeout(attemptReconnection, 300)
+    }
+  } else if (helpCode.value && helpCodeStore.isGuardianConnected) {
+    console.log('✅ 이미 보호자 연결된 상태 - 추가 확인 불필요')
+  }
   
   // WebRTC 인스턴스 초기화를 위한 함수
   const initializeWebRTCIfReady = () => {
@@ -1227,6 +1381,12 @@ onMounted(() => {
   border: 1px solid #bbf7d0;
 }
 
+.status-indicator.checking {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;
@@ -1236,6 +1396,16 @@ onMounted(() => {
 
 .status-indicator.connected .status-dot {
   background: #059669;
+}
+
+.status-indicator.checking .status-dot {
+  background: #d97706;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .code-instruction {

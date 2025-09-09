@@ -322,19 +322,21 @@ const connectWithCode = async () => {
     // remoteVideo ref 재설정 (연결 시점에)
     setupRemoteVideoRef();
     
-    // 연결 완료 후 사용자에게 연결 알림 전송
+    // 연결 완료 후 사용자에게 연결 알림 전송 (지연 시간 단축)
     setTimeout(() => {
       if (client && client.connected) {
         sendMessageToUser('GUARDIAN_CONNECTED'); // 보호자 연결 신호
         console.log('📤 보호자 연결 알림 전송됨');
+        console.log('⏳ 사용자로부터 연결 확인 응답 대기 중...');
       }
-    }, 1000);
+    }, 300); // 1000ms → 300ms로 단축
     
     // WebRTC 시그널링 설정
     setupWebRTCSignaling();
     
-    isConnectedToUser.value = true;
-    console.log('✅ 사용자와 연결 완료');
+    // 연결 상태는 사용자로부터 USER_CONNECTION_CONFIRMED를 받을 때까지 false 유지
+    isConnectedToUser.value = false;
+    console.log('⏳ 사용자 연결 확인 대기 중...');
     
   } catch (error) {
     console.error('❌ 연결 실패:', error);
@@ -373,11 +375,37 @@ watch(guardianMessage, (newMessage) => {
     
     // 사용자 연결 확인 응답인지 체크
     if (newMessage === 'USER_CONNECTION_CONFIRMED') {
-      console.log('✅ 사용자 연결 확인 응답 수신됨!');
+      console.log('✅ 사용자 연결 확인 응답 수신됨! 이제 연결 상태로 설정');
       isConnectedToUser.value = true;
+    } else if (newMessage === 'USER_CONNECTION_CHECK') {
+      // 사용자가 보호자 연결 상태를 확인하는 메시지
+      console.log('📤 사용자 연결 상태 확인 요청 수신');
+      console.log('🔍 현재 연결 상태 확인:', {
+        clientConnected: client?.connected,
+        hasHelpCode: !!helpCode.value,
+        isConnectedToUser: isConnectedToUser.value
+      });
+      
+      // 실제로 사용자와 연결된 상태일 때만 응답
+      if (client && client.connected && helpCode.value && isConnectedToUser.value) {
+        console.log('✅ 보호자가 실제로 연결된 상태 - 응답 전송');
+        // 즉시 응답 전송 (지연 시간 최소화)
+        setTimeout(() => {
+          client.publish({
+            destination: `/app/message/${helpCode.value}`,
+            body: 'GUARDIAN_CONNECTION_ALIVE'
+          });
+          console.log('📤 보호자 연결 상태 응답 전송 완료');
+        }, 20); // 50ms → 20ms로 대폭 단축
+      } else {
+        console.log('❌ 보호자가 연결되지 않은 상태 - 응답하지 않음');
+      }
     } else {
-      // 일반 메시지도 연결 상태로 판단
-      if (!isConnectedToUser.value && helpCode.value) {
+      // 실제 사용자 메시지만 연결 상태로 판단 (시스템 메시지 제외)
+      if (!isConnectedToUser.value && helpCode.value && 
+          !newMessage.startsWith('USER_CONNECTION') && 
+          newMessage.trim() !== '') {
+        console.log('✅ 실제 사용자 메시지 수신으로 연결 상태 설정:', newMessage);
         isConnectedToUser.value = true;
       }
     }
