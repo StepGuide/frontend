@@ -35,7 +35,9 @@
       <div class="welcome-section">
         <div class="welcome-content">
           <h1 class="welcome-title">안녕하세요, 김영희님!</h1>
-          <p class="welcome-subtitle">오늘도 안전하게 금융 서비스를 이용해보세요</p>
+          <p class="welcome-subtitle">
+            오늘도 안전하게 금융 서비스를 이용해보세요
+          </p>
         </div>
         <div class="help-request-card">
           <div class="help-content">
@@ -46,7 +48,7 @@
                 <p>6자리 코드로 실시간 상담 연결</p>
               </div>
             </div>
-            
+
             <!-- 코드가 생성되지 않은 상태 -->
             <div v-if="!generatedCode" class="code-generation-section">
               <div class="generation-info">
@@ -63,9 +65,9 @@
                   <span class="info-text">전문가 상담</span>
                 </div>
               </div>
-              
-              <button 
-                class="help-request-btn" 
+
+              <button
+                class="help-request-btn"
                 @click="generateHelpCode"
                 :disabled="isLoading"
               >
@@ -82,51 +84,65 @@
                 <span>{{ errorMessage }}</span>
               </div>
             </div>
-            
+
             <!-- 코드가 생성된 상태 -->
             <div v-else class="generated-code-section">
-              <div class="success-header">
+              <div class="success-header"></div>
 
-              </div>
-              
               <div class="code-display">
                 <!-- 연결 상태 표시 -->
                 <div class="connection-status">
-                  <div class="status-indicator" :class="{ connected: isGuardianConnected }">
+                  <div
+                    class="status-indicator"
+                    :class="{ connected: isGuardianConnected }"
+                  >
                     <span class="status-dot"></span>
                     <span class="status-text">
-                      {{ isGuardianConnected ? '보호자 연결됨' : '보호자 연결 대기 중' }}
+                      {{
+                        isGuardianConnected
+                          ? '보호자 연결됨'
+                          : '보호자 연결 대기 중'
+                      }}
                     </span>
                   </div>
                 </div>
-                
+
                 <div class="code-label">연결 코드</div>
                 <div class="code-box">
                   <span class="code-text">{{ generatedCode }}</span>
-                  <button class="copy-btn" @click="copyCode" :disabled="isCopying">
+                  <button
+                    class="copy-btn"
+                    @click="copyCode"
+                    :disabled="isCopying"
+                  >
                     <span v-if="isCopying" class="copy-spinner"></span>
                     <span v-else class="copy-icon">📋</span>
                   </button>
                 </div>
-                
+
                 <div class="code-instruction">
                   <span class="instruction-icon">💡</span>
                   <span>이 코드를 보호자에게 알려주세요</span>
                 </div>
-                
+
                 <!-- 디버깅 정보 -->
-                <div class="debug-info" style="font-size: 10px; color: #999; margin-top: 10px;">
+                <div
+                  class="debug-info"
+                  style="font-size: 10px; color: #999; margin-top: 10px"
+                >
                   <div>보호자 연결됨: {{ isGuardianConnected }}</div>
-                  <div>연결 해제 신호: {{ helpCodeStore.connectionTerminated }}</div>
+                  <div>
+                    연결 해제 신호: {{ helpCodeStore.connectionTerminated }}
+                  </div>
                   <div>코드: {{ helpCode }}</div>
                   <div>화면 공유 중: {{ isSharing }}</div>
                   <div>WebRTC 연결됨: {{ isSharing }}</div>
                 </div>
               </div>
-              
+
               <div class="action-buttons">
-                <button 
-                  class="action-btn secondary" 
+                <button
+                  class="action-btn secondary"
                   @click="generateNewCode"
                   :disabled="isLoading"
                 >
@@ -167,25 +183,33 @@
       <div class="account-overview">
         <div class="section-header">
           <h2>내 계좌 현황</h2>
-          <button class="view-all-btn" @click="goToAccountOverview">전체보기</button>
+          <button class="view-all-btn" @click="goToAccountOverview">
+            전체보기
+          </button>
         </div>
         <div class="account-grid">
           <div class="account-card primary">
-                      <div class="card-header">
-            <img :src="primaryBankInfo.image" :alt="primaryBankInfo.name" class="card-icon" />
-            <div class="card-title">KB국민은행</div>
-          </div>
+            <div class="card-header">
+              <img
+                :src="primaryBankInfo.image"
+                :alt="primaryBankInfo.name"
+                class="card-icon"
+              />
+              <div class="card-title">KB국민은행</div>
+            </div>
             <div class="balance-info">
               <div class="balance-label">총 잔액</div>
               <div class="balance-amount">₩ 2,450,000</div>
               <div class="account-number">{{ accountNumber }}</div>
             </div>
             <div class="card-actions">
-              <button class="action-btn transfer" @click="goToTransfer">이체</button>
+              <button class="action-btn transfer" @click="goToTransfer">
+                이체
+              </button>
               <button class="action-btn" @click="goToInquiry">조회</button>
             </div>
           </div>
-          
+
           <div class="account-card secondary">
             <div class="card-header">
               <div class="card-icon">📊</div>
@@ -221,16 +245,18 @@
             <div class="service-icon">💳</div>
             <h3>이체하기</h3>
             <p>안전하고 간편한 계좌이체</p>
-            <button class="service-btn primary" @click="goToTransfer">이용하기</button>
+            <button class="service-btn primary" @click="goToTransfer">
+              이용하기
+            </button>
           </div>
-          
+
           <div class="service-card">
             <div class="service-icon">🎯</div>
             <h3>연습 모드</h3>
             <p>실제 계좌에 영향 없이 연습</p>
             <button class="service-btn" @click="goToPractice">연습하기</button>
           </div>
-          
+
           <div class="service-card">
             <div class="service-icon">🔒</div>
             <h3>보안설정</h3>
@@ -242,9 +268,11 @@
             <div class="service-icon">⭐</div>
             <h3>즐겨찾기</h3>
             <p>계좌 즐겨찾기 관리</p>
-            <button class="service-btn" @click="goToAccountFavorites">즐겨찾기</button>
+            <button class="service-btn" @click="goToAccountFavorites">
+              즐겨찾기
+            </button>
           </div>
-          
+
           <div class="service-card">
             <div class="service-icon">📚</div>
             <h3>금융교육</h3>
@@ -253,8 +281,6 @@
           </div>
         </div>
       </div>
-
-      
 
       <!-- 빠른 도움말 -->
       <div class="quick-help">
@@ -290,19 +316,19 @@ import { useHelpCodeStore } from '@/stores/helpCode'
 import { useWebSocketUser } from '@/utils/useWebSocketUser'
 import { useScreenShareStore } from '@/stores/screenShare'
 
-const router = useRouter()
-const isLoading = ref(false)
-const isCopying = ref(false)
-const errorMessage = ref('')
-const generatedCode = ref('')
+const router = useRouter();
+const isLoading = ref(false);
+const isCopying = ref(false);
+const errorMessage = ref('');
+const generatedCode = ref('');
 
 // 도움 요청 코드 store
-const helpCodeStore = useHelpCodeStore()
+const helpCodeStore = useHelpCodeStore();
 
 // 웹소켓 연결 상태 감지
 const helpCode = computed(() => {
-  return helpCodeStore.generatedCode
-})
+  return helpCodeStore.generatedCode;
+});
 
 // 웹소켓 연결 (동적으로 코드 변경 감지)
 const { 
@@ -352,7 +378,7 @@ watch(guardianMessage, (newMessage) => {
       isGuardianConnected.value = true
     }
   }
-})
+});
 
 // 코드 변경 감지하여 웹소켓 재연결
 watch(helpCode, (newCode, oldCode) => {
@@ -380,71 +406,70 @@ watch(helpCode, (newCode, oldCode) => {
 }, { immediate: true })
 
 // 계좌 정보
-const accountNumber = ref('004-123456-78-90') // KB국민은행 계좌번호
-const secondaryAccountNumber = ref('004-987654-32-10') // KB국민은행 계좌번호
+const accountNumber = ref('004-123456-78-90'); // KB국민은행 계좌번호
+const secondaryAccountNumber = ref('004-987654-32-10'); // KB국민은행 계좌번호
 
 // 은행 정보 computed
 const primaryBankInfo = computed(() => {
-  const bankCode = extractBankCode(accountNumber.value)
-  return getBankInfo(bankCode)
-})
+  const bankCode = extractBankCode(accountNumber.value);
+  return getBankInfo(bankCode);
+});
 
 const secondaryBankInfo = computed(() => {
-  const bankCode = extractBankCode(secondaryAccountNumber.value)
-  return getBankInfo(bankCode)
-})
+  const bankCode = extractBankCode(secondaryAccountNumber.value);
+  return getBankInfo(bankCode);
+});
 
 // 보호자 모드로 전환
 const toggleToGuardianMode = () => {
-  router.push('/guardian')
-}
+  router.push('/guardian');
+};
 
 // 도움 요청 코드 생성
 const generateHelpCode = async () => {
   try {
-    isLoading.value = true
-    errorMessage.value = ''
-    
+    isLoading.value = true;
+    errorMessage.value = '';
+
     // 사용자 ID (실제로는 인증된 사용자 ID를 사용해야 함)
-    const userId = 'user123' // 실제 사용자 ID로 변경 필요
-    
+    const userId = 'user123'; // 실제 사용자 ID로 변경 필요
+
     // 도움 요청 코드 생성 - API에서 6자리 코드 문자열을 직접 반환
-    const helpCode = await createHelpRequest(userId)
-    
-    console.log('생성된 도움 요청 코드:', helpCode)
-    generatedCode.value = helpCode
+    const helpCode = await createHelpRequest(userId);
+
+    console.log('생성된 도움 요청 코드:', helpCode);
+    generatedCode.value = helpCode;
     // store에도 저장
-    helpCodeStore.setGeneratedCode(helpCode)
-    
+    helpCodeStore.setGeneratedCode(helpCode);
   } catch (error) {
-    console.error('도움 요청 생성 실패:', error)
-    errorMessage.value = '도움 요청 생성에 실패했습니다. 다시 시도해주세요.'
-    
+    console.error('도움 요청 생성 실패:', error);
+    errorMessage.value = '도움 요청 생성에 실패했습니다. 다시 시도해주세요.';
+
     // 에러 발생 시 기본 코드 생성
-    generatedCode.value = '123456'
+    generatedCode.value = '123456';
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // 새 코드 생성
 const generateNewCode = async () => {
   // 기존 코드를 지우지 말고 새로운 코드를 생성
-  await generateHelpCode()
-}
+  await generateHelpCode();
+};
 
 // 코드 복사
 const copyCode = async () => {
   try {
-    isCopying.value = true
-    await navigator.clipboard.writeText(generatedCode.value)
+    isCopying.value = true;
+    await navigator.clipboard.writeText(generatedCode.value);
     // 복사 성공 피드백 (선택사항)
-    console.log('코드가 클립보드에 복사되었습니다:', generatedCode.value)
+    console.log('코드가 클립보드에 복사되었습니다:', generatedCode.value);
   } catch (error) {
-    console.error('코드 복사 실패:', error)
-    errorMessage.value = '코드 복사에 실패했습니다.'
+    console.error('코드 복사 실패:', error);
+    errorMessage.value = '코드 복사에 실패했습니다.';
   } finally {
-    isCopying.value = false
+    isCopying.value = false;
   }
 }
 
@@ -555,74 +580,83 @@ const setupWebRTCSignaling = () => {
 
 // 연결 상태 토글
 const toggleConnection = () => {
-  console.log('🔌 MainPage toggleConnection 호출됨')
-  console.log('🔌 MainPage isGuardianConnected:', isGuardianConnected.value)
-  console.log('🔌 MainPage generatedCode:', generatedCode.value)
-  console.log('🔌 MainPage helpCode:', helpCode.value)
+  console.log('🔌 MainPage toggleConnection 호출됨');
+  console.log('🔌 MainPage isGuardianConnected:', isGuardianConnected.value);
+  console.log('🔌 MainPage generatedCode:', generatedCode.value);
+  console.log('🔌 MainPage helpCode:', helpCode.value);
   console.log('🔌 MainPage store 상태:', {
     generatedCode: helpCodeStore.generatedCode,
     isConnectionDisabled: helpCodeStore.isConnectionDisabled,
-    connectionTerminated: helpCodeStore.connectionTerminated
-  })
-  
+    connectionTerminated: helpCodeStore.connectionTerminated,
+  });
+
   // 코드가 생성되어 있으면 연결 끊기로 처리
   if (generatedCode.value) {
-    console.log('🔌 MainPage 연결 끊기 시작 (코드 존재)')
-    
+    console.log('🔌 MainPage 연결 끊기 시작 (코드 존재)');
+
     // 연결 끊기 처리
-    disconnectWebSocket()
-    isGuardianConnected.value = false
-    helpCodeStore.disableConnection() // store에 연결 비활성화 상태 저장
-    helpCodeStore.terminateConnection() // GuardianView에 연결 해제 신호 전송
-    
-    console.log('🔌 MainPage store 연결 비활성화 완료:', helpCodeStore.isConnectionDisabled)
-    console.log('🔌 MainPage 연결 해제 신호 설정 완료:', helpCodeStore.connectionTerminated)
-    
+    disconnectWebSocket();
+    isGuardianConnected.value = false;
+    helpCodeStore.disableConnection(); // store에 연결 비활성화 상태 저장
+    helpCodeStore.terminateConnection(); // GuardianView에 연결 해제 신호 전송
+
+    console.log(
+      '🔌 MainPage store 연결 비활성화 완료:',
+      helpCodeStore.isConnectionDisabled
+    );
+    console.log(
+      '🔌 MainPage 연결 해제 신호 설정 완료:',
+      helpCodeStore.connectionTerminated
+    );
+
     // 연결 끊기 시 초기화면으로 돌아가기
-    generatedCode.value = ''
-    helpCodeStore.clearGeneratedCode()
-    
-    console.log('🔌 MainPage 코드 초기화 완료')
+    generatedCode.value = '';
+    helpCodeStore.clearGeneratedCode();
+
+    console.log('🔌 MainPage 코드 초기화 완료');
     console.log('🔌 MainPage 최종 store 상태:', {
       generatedCode: helpCodeStore.generatedCode,
       isConnectionDisabled: helpCodeStore.isConnectionDisabled,
-      connectionTerminated: helpCodeStore.connectionTerminated
-    })
-    
-    alert('보호자와의 연결이 끊어졌습니다.')
+      connectionTerminated: helpCodeStore.connectionTerminated,
+    });
+
+    alert('보호자와의 연결이 끊어졌습니다.');
   } else {
-    console.log('🔌 MainPage 연결하기 시작')
+    console.log('🔌 MainPage 연결하기 시작');
     // 보호자가 연결되지 않은 상태라면 도움 요청 시작
     if (!helpCode.value) {
-      alert('먼저 도움 요청 코드를 생성해주세요.')
-      return
+      alert('먼저 도움 요청 코드를 생성해주세요.');
+      return;
     }
     // 웹소켓 연결 시도
-    connectWebSocket(helpCode.value)
-    helpCodeStore.enableConnection() // store에 연결 활성화 상태 저장
-    alert(`도움 요청이 시작되었습니다!\n코드: ${helpCode.value}\n\n보호자가 이 코드를 입력하면 실시간 채팅이 가능합니다.`)
+    connectWebSocket(helpCode.value);
+    helpCodeStore.enableConnection(); // store에 연결 활성화 상태 저장
+    alert(
+      `도움 요청이 시작되었습니다!\n코드: ${helpCode.value}\n\n보호자가 이 코드를 입력하면 실시간 채팅이 가능합니다.`
+    );
   }
-}
+};
 
 // 이체 페이지로 이동
 const goToTransfer = () => {
-  router.push('/transfer')
+  // router.push('/transfer')
+  router.push('/accountTransfer')
 }
 
 // 조회 페이지로 이동
 const goToInquiry = () => {
-  router.push('/inquiry')
-}
+  router.push('/inquiry');
+};
 
 // 계좌 현황 전체보기 페이지로 이동
 const goToAccountOverview = () => {
-  router.push('/account-overview')
-}
+  router.push('/account-overview');
+};
 
 // 연습모드 페이지로 이동
 const goToPractice = () => {
-  router.push('/practice')
-}
+  router.push('/practice/PracticeMainPage');
+};
 
 // 계좌 즐겨찾기 페이지로 이동
 const goToAccountFavorites = () => {
@@ -663,49 +697,52 @@ onMounted(() => {
 /* CSS 변수 정의 - KB국민은행 공식 브랜드 컬러 */
 .main-page {
   /* KB Main Colors */
-  --kb-yellow-positive: #FFBC00;  /* KB Yellow Positive - R255 G188 B0 */
-  --kb-yellow-negative: #FFCC00;  /* KB Yellow Negative - R255 G204 B0 */
-  --kb-gray: #605850;             /* KB Gray - R96 G88 B76 */
-  
+  --kb-yellow-positive: #ffbc00; /* KB Yellow Positive - R255 G188 B0 */
+  --kb-yellow-negative: #ffcc00; /* KB Yellow Negative - R255 G204 B0 */
+  --kb-gray: #605850; /* KB Gray - R96 G88 B76 */
+
   /* KB Sub Colors */
-  --kb-dark-gray: #545049;        /* KB Dark Gray - R84 G80 B69 */
-  --kb-gold: #B8860B;             /* KB Gold (추정) */
-  --kb-silver: #C0C0C0;           /* KB Silver (추정) */
-  
+  --kb-dark-gray: #545049; /* KB Dark Gray - R84 G80 B69 */
+  --kb-gold: #b8860b; /* KB Gold (추정) */
+  --kb-silver: #c0c0c0; /* KB Silver (추정) */
+
   /* Derived Colors */
   --primary: var(--kb-yellow-positive);
-  --primary-light: #FFF4D6;
-  --primary-dark: #E6A600;
+  --primary-light: #fff4d6;
+  --primary-dark: #e6a600;
   --secondary: var(--kb-yellow-negative);
-  --secondary-light: #FFF8E1;
+  --secondary-light: #fff8e1;
   --accent: var(--kb-gray);
-  --accent-light: #F5F4F2;
-  --success: #4CAF50;
+  --accent-light: #f5f4f2;
+  --success: #4caf50;
   --warning: var(--kb-yellow-negative);
-  --danger: #F44336;
-  
+  --danger: #f44336;
+
   /* Gray Scale */
-  --gray-50: #FAFAFA;
-  --gray-100: #F5F5F5;
-  --gray-200: #EEEEEE;
-  --gray-300: #E0E0E0;
-  --gray-400: #BDBDBD;
-  --gray-500: #9E9E9E;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #eeeeee;
+  --gray-300: #e0e0e0;
+  --gray-400: #bdbdbd;
+  --gray-500: #9e9e9e;
   --gray-600: #757575;
   --gray-700: #616161;
   --gray-800: #424242;
   --gray-900: #212121;
-  
-  --white: #FFFFFF;
+
+  --white: #ffffff;
   --black: #000000;
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
   /* Border Radius */
   --radius-sm: 6px;
   --radius: 8px;
@@ -724,7 +761,8 @@ onMounted(() => {
 .main-page {
   min-height: 100vh;
   background: var(--gray-50);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, sans-serif;
   color: var(--gray-800);
   line-height: 1.6;
 }
@@ -1003,8 +1041,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -1117,7 +1159,8 @@ onMounted(() => {
   font-weight: 700;
   color: var(--kb-yellow-positive);
   letter-spacing: 2px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   flex: 1;
   text-align: center;
 }
@@ -1173,22 +1216,22 @@ onMounted(() => {
   border-radius: var(--radius);
   font-size: 13px;
   font-weight: 500;
-  background: #FEF2F2;
-  color: #DC2626;
-  border: 1px solid #FECACA;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .status-indicator.connected {
-  background: #F0FDF4;
+  background: #f0fdf4;
   color: #059669;
-  border: 1px solid #BBF7D0;
+  border: 1px solid #bbf7d0;
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #DC2626;
+  background: #dc2626;
 }
 
 .status-indicator.connected .status-dot {
@@ -1256,15 +1299,15 @@ onMounted(() => {
 }
 
 .action-btn.danger {
-  background: #DC2626;
+  background: #dc2626;
   color: var(--white);
-  border-color: #DC2626;
+  border-color: #dc2626;
   box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
 
 .action-btn.danger:hover:not(:disabled) {
-  background: #B91C1C;
-  border-color: #B91C1C;
+  background: #b91c1c;
+  border-color: #b91c1c;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
 }
@@ -1350,11 +1393,19 @@ onMounted(() => {
 }
 
 .account-card.primary {
-  background: linear-gradient(135deg, var(--white) 0%, var(--primary-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--white) 0%,
+    var(--primary-light) 100%
+  );
 }
 
 .account-card.secondary {
-  background: linear-gradient(135deg, var(--white) 0%, var(--accent-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--white) 0%,
+    var(--accent-light) 100%
+  );
 }
 
 .card-header {
@@ -1395,13 +1446,15 @@ onMounted(() => {
   color: var(--kb-yellow-positive);
   margin-bottom: 6px;
   letter-spacing: -0.5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 .account-number {
   font-size: 14px;
   color: var(--kb-gray);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   font-weight: 500;
   background: var(--accent-light);
   padding: 6px 10px;
@@ -1507,7 +1560,8 @@ onMounted(() => {
   font-weight: 700;
   font-size: 20px;
   letter-spacing: -0.5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 .transaction-amount.income {
@@ -1603,8 +1657,6 @@ onMounted(() => {
   background: var(--primary-dark);
 }
 
-
-
 /* 빠른 도움말 - TOSS 스타일 */
 .quick-help {
   margin-bottom: 16px;
@@ -1653,48 +1705,48 @@ onMounted(() => {
   .main-content {
     padding: 16px;
   }
-  
+
   .nav-content {
     padding: 16px 20px;
   }
-  
+
   .welcome-section {
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  
+
   .account-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .services-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .help-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .welcome-title {
     font-size: 32px;
   }
-  
+
   .balance-amount {
     font-size: 32px;
   }
-  
+
   .section-header h2 {
     font-size: 24px;
   }
-  
+
   .card-actions {
     flex-direction: column;
   }
-  
+
   .action-btn {
     width: 100%;
   }
-  
+
   .action-buttons {
     flex-direction: column;
     gap: 12px;
@@ -1739,7 +1791,7 @@ onMounted(() => {
     font-size: 24px;
     letter-spacing: 2px;
   }
-  
+
   .code-box {
     padding: 16px;
     gap: 12px;
@@ -1750,44 +1802,43 @@ onMounted(() => {
   .nav-content {
     padding: 12px 16px;
   }
-  
+
   .main-content {
     padding: 12px;
   }
-  
+
   .help-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .welcome-title {
     font-size: 28px;
   }
-  
+
   .balance-amount {
     font-size: 28px;
   }
-  
+
   .service-card {
     padding: 24px 20px;
   }
-  
+
   .account-card {
     padding: 20px;
   }
-  
+
   .code-text {
     font-size: 20px;
     letter-spacing: 1px;
   }
-  
+
   .code-display h4 {
     font-size: 18px;
   }
-  
+
   .action-btn {
     padding: 12px 20px;
     font-size: 14px;
   }
 }
-
 </style>
