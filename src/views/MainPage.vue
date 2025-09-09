@@ -21,12 +21,12 @@
     </nav>
 
     <!-- 숨겨진 비디오 요소 (WebRTC용) -->
-    <video 
-      ref="localVideo" 
-      autoplay 
-      muted 
+    <video
+      ref="localVideo"
+      autoplay
+      muted
       playsinline
-      style="display: none;"
+      style="display: none"
     ></video>
 
     <!-- 메인 콘텐츠 -->
@@ -78,7 +78,7 @@
                   </span>
                 </div>
               </button>
-              
+
               <div v-if="errorMessage" class="error-message">
                 <span class="error-icon">⚠️</span>
                 <span>{{ errorMessage }}</span>
@@ -149,12 +149,12 @@
                   <span v-if="isLoading">생성 중...</span>
                   <span v-else>새 코드</span>
                 </button>
-                
+
                 <!-- 화면 공유 버튼 -->
-                <button 
+                <button
                   v-if="isGuardianConnected"
-                  class="action-btn screen-share" 
-                  :class="{ 'sharing': isSharing }"
+                  class="action-btn screen-share"
+                  :class="{ sharing: isSharing }"
                   @click="toggleScreenShare"
                   :disabled="!isGuardianConnected || !isWebSocketConnected"
                 >
@@ -163,10 +163,10 @@
                     {{ isSharing ? '화면 공유 중지' : '화면 공유 시작' }}
                   </span>
                 </button>
-                
-                <button 
-                  class="action-btn" 
-                  :class="{ 'primary': !generatedCode, 'danger': generatedCode }"
+
+                <button
+                  class="action-btn"
+                  :class="{ primary: !generatedCode, danger: generatedCode }"
                   @click="toggleConnection"
                   :disabled="!helpCode"
                 >
@@ -305,16 +305,51 @@
       </div>
     </div>
   </div>
+  <div v-if="showGuardianModal" class="modal-mask">
+    <div class="modal-box">
+      <h5 class="mb-2">보호자 전화번호 등록</h5>
+      <p class="text-muted">이상 이체 시 보호자에게 푸시 알림을 보냅니다.</p>
+
+      <input
+        v-model="guardianInput"
+        class="form-control mb-2"
+        placeholder="010-1234-5678"
+        @keydown.enter="saveGuardianPhone"
+      />
+      <small v-if="errGuardian" class="text-danger">{{ errGuardian }}</small>
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button class="btn btn-outline-secondary" @click="skipGuardian">
+          나중에
+        </button>
+        <button
+          class="btn btn-primary"
+          :disabled="savingGuardian"
+          @click="saveGuardianPhone"
+        >
+          {{ savingGuardian ? '저장중...' : '저장' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { createHelpRequest } from '@/api/index'
-import { getBankInfo, extractBankCode } from '@/utils/bankMapping'
-import { useHelpCodeStore } from '@/stores/helpCode'
-import { useWebSocketUser } from '@/utils/useWebSocketUser'
-import { useScreenShareStore } from '@/stores/screenShare'
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { createHelpRequest } from '@/api/index';
+import { getBankInfo, extractBankCode } from '@/utils/bankMapping';
+import { useHelpCodeStore } from '@/stores/helpCode';
+import { useWebSocketUser } from '@/utils/useWebSocketUser';
+import { useScreenShareStore } from '@/stores/screenShare';
+import api from '@/api/axios';
+
+// 상태
+const me = ref(null);
+const showGuardianModal = ref(false);
+const guardianInput = ref('');
+const savingGuardian = ref(false);
+const errGuardian = ref('');
 
 const router = useRouter();
 const isLoading = ref(false);
@@ -325,105 +360,97 @@ const generatedCode = ref('');
 // 도움 요청 코드 store
 const helpCodeStore = useHelpCodeStore();
 
-// 웹소켓 연결 상태 감지
-const helpCode = computed(() => {
-  return helpCodeStore.generatedCode;
-});
+// 웹소켓 연결/메시지
+const helpCode = computed(() => helpCodeStore.generatedCode);
 
-// 웹소켓 연결 (동적으로 코드 변경 감지)
-const { 
-  connected: isWebSocketConnected, 
-  guardianMessage, 
-  connect: connectWebSocket, 
+const {
+  connected: isWebSocketConnected,
+  guardianMessage,
+  connect: connectWebSocket,
   disconnect: disconnectWebSocket,
-  client // 웹소켓 클라이언트 추가
-} = useWebSocketUser(null)
+  client,
+} = useWebSocketUser(null);
 
-// 화면 공유 store 사용
-const screenShareStore = useScreenShareStore()
-const localVideo = ref(null)
+// 화면 공유 store
+const screenShareStore = useScreenShareStore();
+const localVideo = ref(null);
+const { isSharing, isConnected } = screenShareStore;
 
-// store에서 상태와 메서드 가져오기
-const { isSharing, isConnected } = screenShareStore
+// 보호자 연결 상태
+const isGuardianConnected = ref(false);
 
-// 보호자 연결 상태 (실제 보호자 메시지 수신 여부로 판단)
-const isGuardianConnected = ref(false)
-
-// WebRTC 상태는 useWebRTC에서 관리됨
-
-// 보호자 메시지 감지하여 연결 상태 업데이트
+// 보호자 메시지 감지
 watch(guardianMessage, (newMessage) => {
   if (newMessage && newMessage.trim()) {
-    console.log('📨 MainPage 보호자 메시지 수신:', newMessage)
-    
-    // 보호자 연결 신호인지 확인
+    console.log('📨 MainPage 보호자 메시지 수신:', newMessage);
+
     if (newMessage === 'GUARDIAN_CONNECTED') {
-      isGuardianConnected.value = true
-      console.log('✅ 보호자 연결 감지됨!')
-      // 사용자에게 연결 확인 응답 보내기
+      isGuardianConnected.value = true;
+      console.log('✅ 보호자 연결 감지됨!');
       if (client && client.connected && helpCode.value) {
         setTimeout(() => {
           client.publish({
             destination: `/app/message/${helpCode.value}`,
-            body: 'USER_CONNECTION_CONFIRMED'
-          })
-          console.log('📤 사용자 연결 확인 응답 전송됨')
-        }, 500)
+            body: 'USER_CONNECTION_CONFIRMED',
+          });
+          console.log('📤 사용자 연결 확인 응답 전송됨');
+        }, 500);
       }
     } else if (newMessage === 'GUARDIAN_DISCONNECTED') {
-      isGuardianConnected.value = false
-      console.log('❌ 보호자 연결 해제 감지됨!')
+      isGuardianConnected.value = false;
+      console.log('❌ 보호자 연결 해제 감지됨!');
     } else {
-      // 일반 메시지도 연결 상태로 판단
-      isGuardianConnected.value = true
+      // 일반 메시지도 연결로 판단
+      isGuardianConnected.value = true;
     }
   }
 });
 
-// 코드 변경 감지하여 웹소켓 재연결
-watch(helpCode, (newCode, oldCode) => {
-  console.log('🔄 MainPage 코드 변경됨:', oldCode, '->', newCode)
-  if (newCode && newCode !== oldCode) {
-    // 기존 연결 해제 후 새 코드로 재연결
-    disconnectWebSocket()
-    // 보호자 연결 상태 초기화
-    isGuardianConnected.value = false
-    
-    // WebRTC 코드 업데이트 (store를 통해)
-    if (screenShareStore.helpCode !== newCode) {
-      // 새로운 코드로 WebRTC 인스턴스 재초기화
-      screenShareStore.initializeWebRTC(newCode, client)
-      console.log('🔄 WebRTC 코드 업데이트됨:', newCode)
+// 코드 변경 시 재연결
+watch(
+  helpCode,
+  (newCode, oldCode) => {
+    console.log('🔄 MainPage 코드 변경됨:', oldCode, '->', newCode);
+    if (newCode && newCode !== oldCode) {
+      disconnectWebSocket();
+      isGuardianConnected.value = false;
+
+      if (screenShareStore.helpCode !== newCode) {
+        screenShareStore.initializeWebRTC(newCode, client);
+        console.log('🔄 WebRTC 코드 업데이트됨:', newCode);
+      }
+
+      setTimeout(() => {
+        connectWebSocket(newCode);
+        setupWebRTCSignaling();
+        console.log('🔗 MainPage 새 코드로 웹소켓 재연결:', newCode);
+      }, 500);
     }
-    
-    setTimeout(() => {
-      connectWebSocket(newCode)
-      // WebRTC 시그널링도 재설정
-      setupWebRTCSignaling()
-      console.log('🔗 MainPage 새 코드로 웹소켓 재연결:', newCode)
-    }, 500)
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+);
 
 // 계좌 정보
-const accountNumber = ref('004-123456-78-90'); // KB국민은행 계좌번호
-const secondaryAccountNumber = ref('004-987654-32-10'); // KB국민은행 계좌번호
+const accountNumber = ref('004-123456-78-90');
+const secondaryAccountNumber = ref('004-987654-32-10');
 
-// 은행 정보 computed
+// 은행 정보
 const primaryBankInfo = computed(() => {
   const bankCode = extractBankCode(accountNumber.value);
   return getBankInfo(bankCode);
 });
-
 const secondaryBankInfo = computed(() => {
   const bankCode = extractBankCode(secondaryAccountNumber.value);
   return getBankInfo(bankCode);
 });
 
-// 보호자 모드로 전환
-const toggleToGuardianMode = () => {
-  router.push('/guardian');
-};
+// 라우팅
+const toggleToGuardianMode = () => router.push('/guardian');
+const goToTransfer = () => router.push('/accountTransfer');
+const goToInquiry = () => router.push('/inquiry');
+const goToAccountOverview = () => router.push('/account-overview');
+const goToPractice = () => router.push('/practice/PracticeMainPage');
+const goToAccountFavorites = () => router.push('/account-favorites');
 
 // 도움 요청 코드 생성
 const generateHelpCode = async () => {
@@ -431,30 +458,22 @@ const generateHelpCode = async () => {
     isLoading.value = true;
     errorMessage.value = '';
 
-    // 사용자 ID (실제로는 인증된 사용자 ID를 사용해야 함)
-    const userId = 'user123'; // 실제 사용자 ID로 변경 필요
+    // TODO: 실제 로그인 사용자 ID로 교체
+    const userId = 'user123';
 
-    // 도움 요청 코드 생성 - API에서 6자리 코드 문자열을 직접 반환
-    const helpCode = await createHelpRequest(userId);
-
-    console.log('생성된 도움 요청 코드:', helpCode);
-    generatedCode.value = helpCode;
-    // store에도 저장
-    helpCodeStore.setGeneratedCode(helpCode);
+    const code = await createHelpRequest(userId); // 6자리 문자열 직접 반환
+    console.log('생성된 도움 요청 코드:', code);
+    generatedCode.value = code;
+    helpCodeStore.setGeneratedCode(code);
   } catch (error) {
     console.error('도움 요청 생성 실패:', error);
     errorMessage.value = '도움 요청 생성에 실패했습니다. 다시 시도해주세요.';
-
-    // 에러 발생 시 기본 코드 생성
     generatedCode.value = '123456';
   } finally {
     isLoading.value = false;
   }
 };
-
-// 새 코드 생성
 const generateNewCode = async () => {
-  // 기존 코드를 지우지 말고 새로운 코드를 생성
   await generateHelpCode();
 };
 
@@ -463,234 +482,230 @@ const copyCode = async () => {
   try {
     isCopying.value = true;
     await navigator.clipboard.writeText(generatedCode.value);
-    // 복사 성공 피드백 (선택사항)
-    console.log('코드가 클립보드에 복사되었습니다:', generatedCode.value);
+    console.log('코드 복사됨:', generatedCode.value);
   } catch (error) {
     console.error('코드 복사 실패:', error);
     errorMessage.value = '코드 복사에 실패했습니다.';
   } finally {
     isCopying.value = false;
   }
-}
+};
 
 // 화면 공유 토글
 const toggleScreenShare = async () => {
   try {
-    // WebSocket 연결 상태 확인
     if (!isWebSocketConnected.value) {
-      errorMessage.value = 'WebSocket에 연결되지 않았습니다. 먼저 도움 요청 코드를 생성해주세요.';
+      errorMessage.value =
+        'WebSocket에 연결되지 않았습니다. 먼저 도움 요청 코드를 생성해주세요.';
       return;
     }
-
-    // 보호자 연결 상태 확인
     if (!isGuardianConnected.value) {
-      errorMessage.value = '보호자가 연결되지 않았습니다. 보호자가 연결될 때까지 기다려주세요.';
+      errorMessage.value =
+        '보호자가 연결되지 않았습니다. 보호자가 연결될 때까지 기다려주세요.';
       return;
     }
 
     if (isSharing.value) {
-      // 화면 공유 중지
-      screenShareStore.stopScreenShare()
-      console.log('🛑 화면 공유 중지됨')
+      screenShareStore.stopScreenShare();
+      console.log('🛑 화면 공유 중지됨');
     } else {
-      // 화면 공유 시작
       try {
-        await screenShareStore.startScreenShare()
-        console.log('📺 화면 공유 시작됨')
+        await screenShareStore.startScreenShare();
+        console.log('📺 화면 공유 시작됨');
       } catch (error) {
-        console.error('❌ 화면 공유 시작 실패:', error)
-        errorMessage.value = '화면 공유에 실패했습니다: ' + error.message
-        throw error
+        console.error('❌ 화면 공유 시작 실패:', error);
+        errorMessage.value = '화면 공유에 실패했습니다: ' + error.message;
+        throw error;
       }
     }
   } catch (error) {
-    console.error('❌ 화면 공유 토글 실패:', error)
-    errorMessage.value = '화면 공유에 실패했습니다: ' + error.message
+    console.error('❌ 화면 공유 토글 실패:', error);
+    errorMessage.value = '화면 공유에 실패했습니다: ' + error.message;
   }
-}
+};
 
-// WebRTC 시그널링 메시지 처리
+// WebRTC 시그널링 구독
 const setupWebRTCSignaling = () => {
   if (!client) {
-    console.log('⚠️ STOMP 클라이언트가 아직 준비되지 않음');
+    console.log('⚠️ STOMP 클라이언트 준비 전');
     return;
   }
-
-  // STOMP 연결 상태 확인
   if (!client.connected) {
-    console.log('⚠️ STOMP 연결이 아직 완료되지 않음. 2초 후 재시도...');
-    setTimeout(() => {
-      setupWebRTCSignaling();
-    }, 2000);
+    console.log('⚠️ STOMP 미연결. 2초 후 재시도...');
+    setTimeout(setupWebRTCSignaling, 2000);
     return;
   }
 
-  console.log('✅ STOMP 연결 확인됨. WebRTC 시그널링 구독 시작...');
-
-  // store에서 WebRTC 메서드 가져오기
-  const webrtcMethods = screenShareStore.getWebRTCMethods()
-  
-  if (!webrtcMethods || !webrtcMethods.handleAnswer) {
-    console.warn('⚠️ WebRTC 메서드를 사용할 수 없습니다. WebRTC 인스턴스를 먼저 초기화해주세요.');
+  console.log('✅ STOMP 연결 확인. 시그널링 구독 시작...');
+  const methods = screenShareStore.getWebRTCMethods();
+  if (!methods || !methods.handleAnswer) {
+    console.warn('⚠️ WebRTC 메서드 사용 불가. 먼저 인스턴스 초기화 필요.');
     return;
   }
 
   try {
-    // Answer 수신
-    client.subscribe(`/topic/webrtc/answer/${helpCode.value || '123456'}`, (message) => {
-      console.log('📥 Answer 메시지 수신:', message.body);
-      const data = JSON.parse(message.body);
-      if (data.type === 'answer') {
-        console.log('✅ Answer 타입 확인됨, 처리 시작...');
-        webrtcMethods.handleAnswer(new RTCSessionDescription(data));
-      } else {
-        console.warn('⚠️ 잘못된 Answer 타입:', data.type);
+    // Answer
+    client.subscribe(
+      `/topic/webrtc/answer/${helpCode.value || '123456'}`,
+      (msg) => {
+        console.log('📥 Answer 수신:', msg.body);
+        const data = JSON.parse(msg.body);
+        if (data.type === 'answer') {
+          methods.handleAnswer(new RTCSessionDescription(data));
+        } else {
+          console.warn('⚠️ 잘못된 Answer 타입:', data.type);
+        }
       }
-    });
+    );
 
-    // ICE 후보 수신
-    client.subscribe(`/topic/webrtc/ice/${helpCode.value || '123456'}`, (message) => {
-      console.log('📥 ICE 후보 메시지 수신:', message.body);
-      const data = JSON.parse(message.body);
-      if (data.type === 'ice-candidate') {
-        console.log('✅ ICE 후보 타입 확인됨, 처리 시작...');
-        webrtcMethods.handleIceCandidate(data.candidate);
-      } else {
-        console.warn('⚠️ 잘못된 ICE 후보 타입:', data.type);
+    // ICE
+    client.subscribe(
+      `/topic/webrtc/ice/${helpCode.value || '123456'}`,
+      (msg) => {
+        console.log('📥 ICE 후보 수신:', msg.body);
+        const data = JSON.parse(msg.body);
+        if (data.type === 'ice-candidate') {
+          methods.handleIceCandidate(data.candidate);
+        } else {
+          console.warn('⚠️ 잘못된 ICE 타입:', data.type);
+        }
       }
-    });
+    );
 
-    // 연결 종료 수신
-    client.subscribe(`/topic/webrtc/end/${helpCode.value || '123456'}`, (message) => {
-      console.log('📥 연결 종료 메시지 수신:', message.body);
-      const data = JSON.parse(message.body);
-      if (data.type === 'end') {
-        console.log('✅ 연결 종료 타입 확인됨, 처리 시작...');
-        webrtcMethods.handleEnd();
-      } else {
-        console.warn('⚠️ 잘못된 연결 종료 타입:', data.type);
+    // 종료
+    client.subscribe(
+      `/topic/webrtc/end/${helpCode.value || '123456'}`,
+      (msg) => {
+        console.log('📥 종료 수신:', msg.body);
+        const data = JSON.parse(msg.body);
+        if (data.type === 'end') {
+          methods.handleEnd();
+        } else {
+          console.warn('⚠️ 잘못된 종료 타입:', data.type);
+        }
       }
-    });
+    );
 
     console.log('✅ WebRTC 시그널링 구독 완료');
   } catch (error) {
-    console.error('❌ WebRTC 시그널링 구독 실패:', error);
+    console.error('❌ 시그널링 구독 실패:', error);
   }
-}
+};
 
-// 연결 상태 토글
+// 연결 토글
 const toggleConnection = () => {
-  console.log('🔌 MainPage toggleConnection 호출됨');
-  console.log('🔌 MainPage isGuardianConnected:', isGuardianConnected.value);
-  console.log('🔌 MainPage generatedCode:', generatedCode.value);
-  console.log('🔌 MainPage helpCode:', helpCode.value);
-  console.log('🔌 MainPage store 상태:', {
-    generatedCode: helpCodeStore.generatedCode,
-    isConnectionDisabled: helpCodeStore.isConnectionDisabled,
-    connectionTerminated: helpCodeStore.connectionTerminated,
-  });
-
-  // 코드가 생성되어 있으면 연결 끊기로 처리
+  console.log('🔌 MainPage toggleConnection 호출');
   if (generatedCode.value) {
-    console.log('🔌 MainPage 연결 끊기 시작 (코드 존재)');
-
-    // 연결 끊기 처리
+    // 끊기
     disconnectWebSocket();
     isGuardianConnected.value = false;
-    helpCodeStore.disableConnection(); // store에 연결 비활성화 상태 저장
-    helpCodeStore.terminateConnection(); // GuardianView에 연결 해제 신호 전송
-
-    console.log(
-      '🔌 MainPage store 연결 비활성화 완료:',
-      helpCodeStore.isConnectionDisabled
-    );
-    console.log(
-      '🔌 MainPage 연결 해제 신호 설정 완료:',
-      helpCodeStore.connectionTerminated
-    );
-
-    // 연결 끊기 시 초기화면으로 돌아가기
+    helpCodeStore.disableConnection();
+    helpCodeStore.terminateConnection();
     generatedCode.value = '';
     helpCodeStore.clearGeneratedCode();
-
-    console.log('🔌 MainPage 코드 초기화 완료');
-    console.log('🔌 MainPage 최종 store 상태:', {
-      generatedCode: helpCodeStore.generatedCode,
-      isConnectionDisabled: helpCodeStore.isConnectionDisabled,
-      connectionTerminated: helpCodeStore.connectionTerminated,
-    });
-
     alert('보호자와의 연결이 끊어졌습니다.');
   } else {
-    console.log('🔌 MainPage 연결하기 시작');
-    // 보호자가 연결되지 않은 상태라면 도움 요청 시작
+    // 연결
     if (!helpCode.value) {
       alert('먼저 도움 요청 코드를 생성해주세요.');
       return;
     }
-    // 웹소켓 연결 시도
     connectWebSocket(helpCode.value);
-    helpCodeStore.enableConnection(); // store에 연결 활성화 상태 저장
+    helpCodeStore.enableConnection();
     alert(
       `도움 요청이 시작되었습니다!\n코드: ${helpCode.value}\n\n보호자가 이 코드를 입력하면 실시간 채팅이 가능합니다.`
     );
   }
 };
 
-// 이체 페이지로 이동
-const goToTransfer = () => {
-  // router.push('/transfer')
-  router.push('/accountTransfer')
+// ---------- 유틸 (전화번호 정규화/검증) ----------
+function normalizePhone(raw) {
+  return (raw || '').replace(/[^\d]/g, '');
+}
+function isValidKrMobile(num) {
+  return /^01[016789]\d{7,8}$/.test(num);
 }
 
-// 조회 페이지로 이동
-const goToInquiry = () => {
-  router.push('/inquiry');
-};
-
-// 계좌 현황 전체보기 페이지로 이동
-const goToAccountOverview = () => {
-  router.push('/account-overview');
-};
-
-// 연습모드 페이지로 이동
-const goToPractice = () => {
-  router.push('/practice/PracticeMainPage');
-};
-
-// 계좌 즐겨찾기 페이지로 이동
-const goToAccountFavorites = () => {
-  router.push('/account-favorites')
-}
-
-// 컴포넌트 마운트 시 초기화
+// ---------- 마운트 시: WebRTC 초기화 대기 & 시그널링 설정 ----------
 onMounted(() => {
-  console.log('🚀 MainPage 마운트됨')
-  
-  // WebRTC 인스턴스 초기화를 위한 함수
+  console.log('🚀 MainPage 마운트됨');
+
   const initializeWebRTCIfReady = () => {
     if (helpCode.value && client) {
-      console.log('🔧 WebRTC 인스턴스 초기화:', helpCode.value)
-      const webrtcInstance = screenShareStore.initializeWebRTC(helpCode.value, client)
-      
+      console.log('🔧 WebRTC 인스턴스 초기화:', helpCode.value);
+      const webrtcInstance = screenShareStore.initializeWebRTC(
+        helpCode.value,
+        client
+      );
+
       // localVideo ref 연결
       if (webrtcInstance && webrtcInstance.localVideo) {
-        webrtcInstance.localVideo.value = localVideo.value
+        webrtcInstance.localVideo.value = localVideo.value;
       }
-      
-      // WebRTC 시그널링 설정
+
+      // 시그널링 구독
       setTimeout(() => {
-        setupWebRTCSignaling(webrtcInstance);
+        setupWebRTCSignaling(webrtcInstance); // 인자 전달해도 무방
       }, 1000);
     } else {
-      console.log('⏳ WebRTC 초기화 대기 중... (helpCode:', helpCode.value, ', client:', !!client, ')')
-      // 1초 후 재시도
+      console.log(
+        '⏳ WebRTC 초기화 대기... (helpCode:',
+        helpCode.value,
+        ', client:',
+        !!client,
+        ')'
+      );
       setTimeout(initializeWebRTCIfReady, 1000);
     }
+  };
+
+  initializeWebRTCIfReady();
+});
+
+// ---------- 마운트 시: 사용자 정보 조회 & 보호자번호 모달 ----------
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/me');
+    if (data?.isSuccess) {
+      me.value = data.result;
+      if (!me.value?.guardianPhone) {
+        showGuardianModal.value = true;
+      }
+    } else {
+      console.warn('/me 실패:', data?.message);
+    }
+  } catch (e) {
+    if (e?.response?.status === 401) {
+      router.replace('/login');
+    } else {
+      console.error('/me 에러:', e);
+    }
   }
-  
-  initializeWebRTCIfReady()
-})
+});
+
+// ---------- 보호자 번호 저장 ----------
+async function saveGuardianPhone() {
+  errGuardian.value = '';
+  const num = normalizePhone(guardianInput.value);
+  if (!isValidKrMobile(num)) {
+    errGuardian.value = '올바른 휴대전화 번호를 입력해주세요.';
+    return;
+  }
+  try {
+    savingGuardian.value = true;
+    await api.put('/me/guardian-phone', { phone: num }); // PUT /api/me/guardian-phone
+    me.value = { ...(me.value || {}), guardianPhone: num };
+    showGuardianModal.value = false;
+  } catch (e) {
+    console.error('guardian-phone 저장 실패:', e);
+    errGuardian.value = '저장에 실패했습니다. 잠시 후 다시 시도해주세요.';
+  } finally {
+    savingGuardian.value = false;
+  }
+}
+function skipGuardian() {
+  showGuardianModal.value = false;
+}
 </script>
 
 <style scoped>
@@ -1751,7 +1766,7 @@ onMounted(() => {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   /* 화면 공유 버튼 스타일 */
   .action-btn.screen-share {
     background: var(--kb-blue);
@@ -1762,31 +1777,31 @@ onMounted(() => {
     gap: 8px;
     justify-content: center;
   }
-  
+
   .action-btn.screen-share:hover {
     background: var(--kb-blue-dark);
     border-color: var(--kb-blue-dark);
   }
-  
+
   .action-btn.screen-share.sharing {
     background: var(--kb-danger);
     border-color: var(--kb-danger);
   }
-  
+
   .action-btn.screen-share.sharing:hover {
     background: #d32f2f;
     border-color: #d32f2f;
   }
-  
+
   .btn-icon {
     font-size: 16px;
   }
-  
+
   .btn-text {
     font-size: 14px;
     font-weight: 600;
   }
-  
+
   .code-text {
     font-size: 24px;
     letter-spacing: 2px;
@@ -1840,5 +1855,24 @@ onMounted(() => {
     padding: 12px 20px;
     font-size: 14px;
   }
+}
+
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1050;
+}
+.modal-box {
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  padding: 16px 16px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 </style>
