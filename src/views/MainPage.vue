@@ -28,7 +28,7 @@
       <!-- 환영 메시지 -->
       <div class="welcome-section">
         <div class="welcome-content">
-          <h1 class="welcome-title">안녕하세요, 김영희님!</h1>
+          <h1 class="welcome-title">안녕하세요, {{ userName }}님!</h1>
           <p class="welcome-subtitle">
             오늘도 안전하게 금융 서비스를 이용해보세요
           </p>
@@ -314,6 +314,7 @@ import { getBankInfo, extractBankCode } from '@/utils/bankMapping';
 import { useHelpCodeStore } from '@/stores/helpCode';
 import { useWebSocketUser } from '@/utils/useWebSocketUser';
 import { useScreenShareStore } from '@/stores/screenShare';
+import { useAuthStore } from '@/stores/auth';
 import GuardianPhoneModal from './GuardianPhoneModal.vue';
 import api from '@/api/axios';
 
@@ -329,9 +330,22 @@ const generatedCode = ref('');
 
 // 도움 요청 코드 store
 const helpCodeStore = useHelpCodeStore();
+const authStore = useAuthStore();
 
 // 웹소켓 연결/메시지
 const helpCode = computed(() => helpCodeStore.generatedCode);
+
+// 사용자 이름 가져오기
+const userName = computed(() => {
+  // API에서 가져온 사용자 정보 사용
+  if (me.value && me.value.username) {
+    console.log('👤 computed userName:', me.value.username);
+    return me.value.username;
+  }
+  // 사용자 정보가 없으면 기본값 사용
+  console.log('⚠️ 사용자 이름이 없어서 기본값 사용');
+  return '사용자';
+});
 
 const {
   connected: isWebSocketConnected,
@@ -629,20 +643,34 @@ onMounted(() => {
 // ---------- 마운트 시: 사용자 정보 조회 & 보호자번호 모달 ----------
 onMounted(async () => {
   try {
+    console.log('🔍 /api/me API 호출 시작...');
     const { data } = await api.get('/me');
+    console.log('📊 /api/me 응답 데이터:', data);
+    
     if (data?.isSuccess) {
       me.value = data.result;
+      console.log('✅ 사용자 정보 로드 성공:', me.value);
+      console.log('👤 사용자 이름:', me.value?.username);
+      console.log('📱 전화번호:', me.value?.phoneNumber);
+      console.log('🛡️ 보호자 전화번호:', me.value?.guardianPhone);
+      
       if (!me.value?.guardianPhone) {
+        console.log('⚠️ 보호자 전화번호가 없어서 모달 표시');
         showGuardianModal.value = true;
       }
     } else {
-      console.warn('/me 실패:', data?.message);
+      console.warn('❌ /me 실패:', data?.message);
     }
   } catch (e) {
+    console.error('❌ /api/me API 호출 에러:', e);
+    console.error('📊 에러 응답:', e?.response?.data);
+    console.error('🔢 상태 코드:', e?.response?.status);
+    
     if (e?.response?.status === 401) {
+      console.log('🔐 인증 실패 - 로그인 페이지로 이동');
       router.replace('/login');
     } else {
-      console.error('/me 에러:', e);
+      console.error('💥 예상치 못한 에러:', e);
     }
   }
 });
