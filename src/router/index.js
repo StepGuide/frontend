@@ -19,7 +19,6 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/login/LoginPage.vue'),
-
     },
     {
       path: '/oauth/callback/kakao',
@@ -30,6 +29,11 @@ const router = createRouter({
       path: '/transfer',
       name: 'transfer',
       component: () => import('../views/TransferPage.vue'),
+    },
+    {
+      path: '/education',
+      name: 'education',
+      component: () => import('../views/EducationPage.vue'),
     },
     {
       path: '/inquiry',
@@ -59,11 +63,11 @@ const router = createRouter({
     {
       path: '/accountTransfer',
       name: 'accountTransfer',
-      component: () => import('../views/accountTransfer/AccountTransferPage.vue')
+      component: () =>
+        import('../views/accountTransfer/AccountTransferPage.vue'),
     },
 
     ...practiceRoutes,
-
   ],
 });
 

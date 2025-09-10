@@ -277,7 +277,7 @@
             <div class="service-icon">📚</div>
             <h3>금융교육</h3>
             <p>안전한 금융 이용법</p>
-            <button class="service-btn">학습하기</button>
+            <button class="service-btn" @click="goToEducation">학습하기</button>
           </div>
         </div>
       </div>
@@ -451,6 +451,7 @@ const goToInquiry = () => router.push('/inquiry');
 const goToAccountOverview = () => router.push('/account-overview');
 const goToPractice = () => router.push('/practice/PracticeMainPage');
 const goToAccountFavorites = () => router.push('/account-favorites');
+const goToEducation = () => router.push('/education');
 
 // 도움 요청 코드 생성
 const generateHelpCode = async () => {
