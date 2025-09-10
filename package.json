@@ -12,6 +12,7 @@
     "@stomp/stompjs": "^7.1.1",
     "axios": "^1.11.0",
     "chart.js": "^4.5.0",
+    "firebase": "^12.2.1",
     "pinia": "^3.0.3",
     "sockjs-client": "^1.6.1",
     "vue": "^3.5.13",
