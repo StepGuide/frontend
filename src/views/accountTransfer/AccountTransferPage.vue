@@ -1,90 +1,87 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useTransferStore } from '@/stores/accountTransferStore';
 import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
 import { checkFraudAccount } from '@/api/fraudAccountApi';
 import { favorites, getFavorites } from '@/api/favoritesApi';
 
-const router = useRouter()
-const store = useTransferStore()
+const router = useRouter();
+const store = useTransferStore();
 
 // 거래내역
 // const transactions = ref([])
-const transactions = computed(() => store.transactions)
+const transactions = computed(() => store.transactions);
 
-const currentStep = computed(() => store.currentStep)
+const currentStep = computed(() => store.currentStep);
 
-const accounts = computed(() => store.accounts)
+const accounts = computed(() => store.accounts);
 
 const selectedAccount = computed({
   get: () => store.selectedAccount,
-  set: val => store.selectedAccount = val
-})
+  set: (val) => (store.selectedAccount = val),
+});
 
 const transferDTO = computed({
   get: () => store.transferDTO,
-  set: val => store.transferDTO = val
-})
+  set: (val) => (store.transferDTO = val),
+});
 
 const isStep2Valid = computed(() => {
-  return transferDTO.value.sendBankCode &&
-         transferDTO.value.payeeAccountNumber &&
-         transferDTO.value.transactionAmount > 0
-})
-
+  return (
+    transferDTO.value.sendBankCode &&
+    transferDTO.value.payeeAccountNumber &&
+    transferDTO.value.transactionAmount > 0
+  );
+});
 
 const selectAccount = async (account) => {
-  await store.selectAccount(account) // store 함수 호출
+  await store.selectAccount(account); // store 함수 호출
 
-  selectedAccount.value = account
-  transferDTO.value.accountId = account.accountId
-  transferDTO.value.accountNumber = account.accountNumber
-  transferDTO.value.accountName = account.accountName
-  transferDTO.value.balance = account.balance
-  transferDTO.value.bankCode = account.bankCode
+  selectedAccount.value = account;
+  transferDTO.value.accountId = account.accountId;
+  transferDTO.value.accountNumber = account.accountNumber;
+  transferDTO.value.accountName = account.accountName;
+  transferDTO.value.balance = account.balance;
+  transferDTO.value.bankCode = account.bankCode;
 
   // 거래내역 불러오기
   try {
-  const result = await getAccountTransactions(account.accountId)
+    const result = await getAccountTransactions(account.accountId);
 
-  // 필드명 확인 필요: created_time vs createdTime
-  transactions.value = result
-    // .filter((tx) => tx.deposit_withdrawal === 'WITHDRAWAL')
-    // .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime)) // 최신순
-    .slice(0, 5)
+    // 필드명 확인 필요: created_time vs createdTime
+    transactions.value = result
+      // .filter((tx) => tx.deposit_withdrawal === 'WITHDRAWAL')
+      // .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime)) // 최신순
+      .slice(0, 5);
 
-  console.log('필터링/정렬 후 거래내역:', transactions.value)
-
+    console.log('필터링/정렬 후 거래내역:', transactions.value);
   } catch (err) {
-    console.error('거래내역 조회 실패', err)
-    transactions.value = []
+    console.error('거래내역 조회 실패', err);
+    transactions.value = [];
   }
-}
-
+};
 
 const nextStep = async () => {
   if (currentStep.value === 2) {
     try {
-      await store.validate()
-      alert('검증 성공!')
+      await store.validate();
+      alert('검증 성공!');
     } catch (err) {
-      alert('검증 실패: ' + err.message)
-      return
+      alert('검증 실패: ' + err.message);
+      return;
     }
   }
 
-  store.nextStep()
+  store.nextStep();
 
   // 업데이트된 currentStep 확인 후 이상탐지 실행
   if (currentStep.value === 3) {
-    await calculateAnomaly()
+    await calculateAnomaly();
   }
+};
 
-  
-}
-
-const prevStep = () => store.prevStep()
+const prevStep = () => store.prevStep();
 
 const confirmTransfer = async () => {
   try {
@@ -99,73 +96,73 @@ const confirmTransfer = async () => {
     //   return
     // }
 
-    const res = await store.execute()
-    alert(res || '이체 완료!')
-    router.push('/')
+    const res = await store.execute();
+    alert(res || '이체 완료!');
+    router.push('/');
   } catch (err) {
-    alert('이체 실패: ' + err.message)
+    alert('이체 실패: ' + err.message);
   }
-}
+};
 
-const goBack = () => router.push('/')
-const requestHelp = () => router.push('/')
+const goBack = () => router.push('/');
+const requestHelp = () => router.push('/');
 
-const formatNumber = (num) => new Intl.NumberFormat('ko-KR').format(num)
+const formatNumber = (num) => new Intl.NumberFormat('ko-KR').format(num);
 
 // 은행리스트 (은행코드-은행이름 매칭)
 const bankList = [
-  { code: "004", name: "KB국민은행" },
-  { code: "023", name: "SC제일은행" },
-  { code: "039", name: "경남은행" },
-  { code: "034", name: "광주은행" },
-  { code: "003", name: "기업은행" },
-  { code: "011", name: "농협" },
-  { code: "031", name: "대구은행" },
-  { code: "032", name: "부산은행" },
-  { code: "002", name: "산업은행" },
-  { code: "007", name: "수협" },
-  { code: "088", name: "신한은행" },
-  { code: "048", name: "신협" },
-  { code: "005", name: "외환은행" },
-  { code: "020", name: "우리은행" },
-  { code: "071", name: "우체국" },
-  { code: "037", name: "전북은행" },
-  { code: "035", name: "제주은행" },
-  { code: "012", name: "축협" },
-  { code: "081", name: "하나은행(서울은행)" },
-  { code: "027", name: "한국씨티은행(한미은행)" },
-  { code: "089", name: "K뱅크" },
-  { code: "090", name: "카카오뱅크" },
-  { code: "209", name: "유안타증권" },
-  { code: "218", name: "현대증권" },
-  { code: "230", name: "미래에셋증권" },
-  { code: "238", name: "대우증권" },
-  { code: "240", name: "삼성증권" },
-  { code: "243", name: "한국투자증권" },
-  { code: "247", name: "우리투자증권" },
-  { code: "261", name: "교보증권" },
-  { code: "262", name: "하이투자증권" },
-  { code: "263", name: "에이치엠씨투자증권" },
-  { code: "264", name: "키움증권" },
-  { code: "265", name: "이트레이드증권" },
-  { code: "266", name: "에스케이증권" },
-  { code: "267", name: "대신증권" },
-  { code: "268", name: "솔로몬투자증권" },
-  { code: "269", name: "한화증권" },
-  { code: "270", name: "하나대투증권" },
-  { code: "278", name: "굿모닝신한증권" },
-  { code: "279", name: "동부증권" },
-  { code: "280", name: "유진투자증권" },
-  { code: "287", name: "메리츠증권" },
-  { code: "289", name: "엔에이치투자증권" },
-  { code: "290", name: "부국증권" }
-]
+  { code: '004', name: 'KB국민은행' },
+  { code: '023', name: 'SC제일은행' },
+  { code: '039', name: '경남은행' },
+  { code: '034', name: '광주은행' },
+  { code: '003', name: '기업은행' },
+  { code: '011', name: '농협' },
+  { code: '031', name: '대구은행' },
+  { code: '032', name: '부산은행' },
+  { code: '002', name: '산업은행' },
+  { code: '007', name: '수협' },
+  { code: '088', name: '신한은행' },
+  { code: '048', name: '신협' },
+  { code: '005', name: '외환은행' },
+  { code: '020', name: '우리은행' },
+  { code: '071', name: '우체국' },
+  { code: '037', name: '전북은행' },
+  { code: '035', name: '제주은행' },
+  { code: '012', name: '축협' },
+  { code: '081', name: '하나은행(서울은행)' },
+  { code: '027', name: '한국씨티은행(한미은행)' },
+  { code: '089', name: 'K뱅크' },
+  { code: '090', name: '카카오뱅크' },
+  { code: '209', name: '유안타증권' },
+  { code: '218', name: '현대증권' },
+  { code: '230', name: '미래에셋증권' },
+  { code: '238', name: '대우증권' },
+  { code: '240', name: '삼성증권' },
+  { code: '243', name: '한국투자증권' },
+  { code: '247', name: '우리투자증권' },
+  { code: '261', name: '교보증권' },
+  { code: '262', name: '하이투자증권' },
+  { code: '263', name: '에이치엠씨투자증권' },
+  { code: '264', name: '키움증권' },
+  { code: '265', name: '이트레이드증권' },
+  { code: '266', name: '에스케이증권' },
+  { code: '267', name: '대신증권' },
+  { code: '268', name: '솔로몬투자증권' },
+  { code: '269', name: '한화증권' },
+  { code: '270', name: '하나대투증권' },
+  { code: '278', name: '굿모닝신한증권' },
+  { code: '279', name: '동부증권' },
+  { code: '280', name: '유진투자증권' },
+  { code: '287', name: '메리츠증권' },
+  { code: '289', name: '엔에이치투자증권' },
+  { code: '290', name: '부국증권' },
+];
 
 // 은행코드로 은행이름 가져오기
 const getBankName = (code) => {
-  const bank = bankList.find(b => b.code === code)
-  return bank ? bank.name : code
-}
+  const bank = bankList.find((b) => b.code === code);
+  return bank ? bank.name : code;
+};
 
 // <이상계좌 탐지>
 // 이상징후 점수 상태 및 표시 계산값
@@ -238,7 +235,6 @@ const calculateAnomaly = async () => {
     const requestBody = {
       accountNumber: transferDTO.value.payeeAccountNumber,
       transactionAmount: Number(transferDTO.value.transactionAmount),
-      transactionDateTime: new Date().toISOString(),
     };
     const response = await calculateAnomalyScore(requestBody);
     if (response && response.data) {
@@ -260,11 +256,11 @@ const calculateAnomaly = async () => {
 // ---- 최근거래내역 관련 ----
 // 최근 거래내역 클릭 시 자동으로 정보 채우기
 const fillTransferInfo = (transfer) => {
-  transferDTO.value.sendBankCode = transfer.sendBankCode
-  transferDTO.value.payeeAccountNumber = transfer.payeeAccountNumber
-  transferDTO.value.accountHolderName = transfer.accountHolderName || ''
+  transferDTO.value.sendBankCode = transfer.sendBankCode;
+  transferDTO.value.payeeAccountNumber = transfer.payeeAccountNumber;
+  transferDTO.value.accountHolderName = transfer.accountHolderName || '';
   // transferDTO.value.transactionAmount = transfer.transactionAmount || 0
-}
+};
 
 // watch(selectedAccount, async (newVal) => {
 //   if (newVal && currentStep.value === 2) { // Step2일 때만 fetch
@@ -277,7 +273,7 @@ const fillTransferInfo = (transfer) => {
 //   }
 // }, { immediate: true })
 // watch(selectedAccount, async (newVal) => {
-//   if (newVal && currentStep.value === 2) { 
+//   if (newVal && currentStep.value === 2) {
 //     try {
 //       const result = await getAccountTransactions(newVal.accountId)
 //       transactions.value = result
@@ -290,42 +286,46 @@ const fillTransferInfo = (transfer) => {
 //     }
 //   }
 // }, { immediate: true })
-watch(selectedAccount, async (newVal) => {
-  if (newVal && currentStep.value === 2) { 
-    try {
-      const result = await getAccountTransactions(newVal.accountId)
-      transactions.value = result
-        // .filter((tx) => tx.deposit_withdrawal === 'WITHDRAWAL')
-        .slice(0, 5) // 백엔드에서 이미 최신순
-    } catch (err) {
-      console.error('거래내역 조회 실패', err)
-      transactions.value = []
+watch(
+  selectedAccount,
+  async (newVal) => {
+    if (newVal && currentStep.value === 2) {
+      try {
+        const result = await getAccountTransactions(newVal.accountId);
+        transactions.value = result
+          // .filter((tx) => tx.deposit_withdrawal === 'WITHDRAWAL')
+          .slice(0, 5); // 백엔드에서 이미 최신순
+      } catch (err) {
+        console.error('거래내역 조회 실패', err);
+        transactions.value = [];
+      }
     }
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+);
 
 // 즐겨찾기 클릭 시 정보 채우기
 const fillFavoriteInfo = (favorite) => {
-  transferDTO.value.sendBankCode = favorite.sendBankCode
-  transferDTO.value.payeeAccountNumber = favorite.sendAccountNumber
-  transferDTO.value.accountHolderName = favorite.sendBankNickname || ''
-}
+  transferDTO.value.sendBankCode = favorite.sendBankCode;
+  transferDTO.value.payeeAccountNumber = favorite.sendAccountNumber;
+  transferDTO.value.accountHolderName = favorite.sendBankNickname || '';
+};
 
 // 날짜 포맷팅
 const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
+  const date = new Date(dateStr);
   return date.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
-  })
-}
+    day: '2-digit',
+  });
+};
 
 onMounted(() => {
-  const userId = 1 // 로그인 유저 ID
-  store.fetchAccounts(userId)
-  getFavorites()
-})
+  const userId = 1; // 로그인 유저 ID
+  store.fetchAccounts(userId);
+  getFavorites();
+});
 </script>
 
 <template>
@@ -352,12 +352,18 @@ onMounted(() => {
     <div class="main-content">
       <!-- 이체 단계 표시 -->
       <div class="step-indicator">
-        <div class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+        <div
+          class="step"
+          :class="{ active: currentStep >= 1, completed: currentStep > 1 }"
+        >
           <span class="step-number">1</span>
           <span class="step-text">계좌 선택</span>
         </div>
         <div class="step-line" :class="{ active: currentStep > 1 }"></div>
-        <div class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+        <div
+          class="step"
+          :class="{ active: currentStep >= 2, completed: currentStep > 2 }"
+        >
           <span class="step-number">2</span>
           <span class="step-text">이체 정보</span>
         </div>
@@ -374,33 +380,48 @@ onMounted(() => {
           <h2>출금 계좌 선택</h2>
           <p>이체할 계좌를 선택해주세요</p>
         </div>
-        
+
         <div class="account-list">
-          <div v-for="acc in accounts" :key="acc.accountId" class="account-item"
-             :class="{ selected: selectedAccount?.accountId === acc.accountId }"
-             @click="selectAccount(acc)">
+          <div
+            v-for="acc in accounts"
+            :key="acc.accountId"
+            class="account-item"
+            :class="{ selected: selectedAccount?.accountId === acc.accountId }"
+            @click="selectAccount(acc)"
+          >
             <div class="account-info">
-              <div class="bank-name">{{ acc.accountName }}</div> 
-              <div class="account-number">{{ acc.accountNumber }}</div> 
+              <div class="bank-name">{{ acc.accountName }}</div>
+              <div class="account-number">{{ acc.accountNumber }}</div>
               <div class="account-name">이름</div>
             </div>
             <div class="balance">
-                <div class="balance-amount">
-                    ₩ {{ formatNumber(acc.balance) }}
-                </div>
-                <div class="balance-label">잔액</div>
+              <div class="balance-amount">
+                ₩ {{ formatNumber(acc.balance) }}
+              </div>
+              <div class="balance-label">잔액</div>
             </div>
             <div class="select-indicator">
-              <span v-if="selectedAccount?.accountId === acc.accountId" class="check-icon">✓</span>
+              <span
+                v-if="selectedAccount?.accountId === acc.accountId"
+                class="check-icon"
+                >✓</span
+              >
             </div>
           </div>
         </div>
 
         <div class="action-buttons">
           <button class="btn-secondary" @click="goBack">취소</button>
-          <button class="btn-primary" :disabled="!selectedAccount" @click="nextStep">다음</button>
+          <button
+            class="btn-primary"
+            :disabled="!selectedAccount"
+            @click="nextStep"
+          >
+            다음
+          </button>
         </div>
-      </div><!-- end 1단계 -->
+      </div>
+      <!-- end 1단계 -->
 
       <!-- 2단계: 이체 정보 입력 -->
       <div v-if="currentStep === 2" class="step-content">
@@ -413,46 +434,59 @@ onMounted(() => {
         <div class="recent-transfers">
           <h3>최근 거래내역</h3>
           <div v-if="transactions.length === 0">최근 거래내역이 없습니다.</div>
-          <div v-for="t in transactions.slice(0,5)" :key="t.transactionId" 
-              class="transfer-item" 
-              @click="fillTransferInfo(t)">
-              <span>{{ getBankName(t.sendBankCode) }}</span>
-              <span>{{ t.payeeAccountNumber }}</span>
-              <span>{{  t.accountHolderName }}</span>
-              <span>₩ {{ formatNumber(t.transactionAmount) }}</span>
-              <span>{{ formatDate(t.createdTime) }}</span>
+          <div
+            v-for="t in transactions.slice(0, 5)"
+            :key="t.transactionId"
+            class="transfer-item"
+            @click="fillTransferInfo(t)"
+          >
+            <span>{{ getBankName(t.sendBankCode) }}</span>
+            <span>{{ t.payeeAccountNumber }}</span>
+            <span>{{ t.accountHolderName }}</span>
+            <span>₩ {{ formatNumber(t.transactionAmount) }}</span>
+            <span>{{ formatDate(t.createdTime) }}</span>
           </div>
         </div>
 
         <!-- 즐겨찾기 계좌 -->
         <div class="favorite-transfers" v-if="favorites.length">
           <h3>즐겨찾기 계좌</h3>
-          <div v-for="f in favorites" :key="f.favoriteId" class="transfer-item"
-              @click="fillFavoriteInfo(f)">
+          <div
+            v-for="f in favorites"
+            :key="f.favoriteId"
+            class="transfer-item"
+            @click="fillFavoriteInfo(f)"
+          >
             <span>{{ getBankName(f.sendBankCode) }}</span>
             <span>{{ f.sendAccountNumber }}</span>
             <span>{{ f.sendBankNickname }}</span>
           </div>
         </div>
-        
 
         <!--  -->
         <div class="form-section">
           <div class="form-group">
             <label>받는 은행</label>
             <select v-model="transferDTO.sendBankCode" class="form-input">
-            <option value="">은행 선택</option>
-            <option v-for="bank in bankList" 
-                    :key="bank.code" 
-                    :value="bank.code">
+              <option value="">은행 선택</option>
+              <option
+                v-for="bank in bankList"
+                :key="bank.code"
+                :value="bank.code"
+              >
                 {{ bank.name }}
-            </option>
+              </option>
             </select>
           </div>
 
           <div class="form-group">
             <label>받는 분 계좌번호</label>
-            <input type="text" v-model="transferDTO.payeeAccountNumber" placeholder="계좌번호" class="form-input"/>
+            <input
+              type="text"
+              v-model="transferDTO.payeeAccountNumber"
+              placeholder="계좌번호"
+              class="form-input"
+            />
           </div>
 
           <!-- <div class="form-group">
@@ -463,7 +497,12 @@ onMounted(() => {
           <div class="form-group">
             <label>금액</label>
             <div class="amount-input-group">
-              <input type="number" v-model.number="transferDTO.transactionAmount" placeholder="0" class="form-input amount-input"/>
+              <input
+                type="number"
+                v-model.number="transferDTO.transactionAmount"
+                placeholder="0"
+                class="form-input amount-input"
+              />
               <span class="currency">원</span>
             </div>
             <div class="amount-display">
@@ -473,15 +512,27 @@ onMounted(() => {
 
           <div class="form-group">
             <label>이체 메모 (선택사항)</label>
-            <input type="text" v-model="transferDTO.memo" placeholder="메모" class="form-input"/>
+            <input
+              type="text"
+              v-model="transferDTO.memo"
+              placeholder="메모"
+              class="form-input"
+            />
           </div>
         </div>
 
         <div class="action-buttons">
           <button class="btn-secondary" @click="prevStep">이전</button>
-          <button class="btn-primary" :disabled="!isStep2Valid" @click="nextStep">다음</button>
+          <button
+            class="btn-primary"
+            :disabled="!isStep2Valid"
+            @click="nextStep"
+          >
+            다음
+          </button>
         </div>
-      </div><!-- end 2단계 -->
+      </div>
+      <!-- end 2단계 -->
 
       <!-- 3단계: 확인 -->
       <div v-if="currentStep === 3" class="step-content">
@@ -494,9 +545,15 @@ onMounted(() => {
           <div class="confirmation-section">
             <h3>출금 계좌</h3>
             <div class="account-detail">
-              <div class="bank-name">{{ getBankName(selectedAccount.bankCode) }}</div>
-              <div class="account-number">{{ selectedAccount.accountNumber }}</div>
-              <div class="balance">잔액: ₩ {{ formatNumber(selectedAccount.balance) }}</div>
+              <div class="bank-name">
+                {{ getBankName(selectedAccount.bankCode) }}
+              </div>
+              <div class="account-number">
+                {{ selectedAccount.accountNumber }}
+              </div>
+              <div class="balance">
+                잔액: ₩ {{ formatNumber(selectedAccount.balance) }}
+              </div>
             </div>
           </div>
 
@@ -505,7 +562,9 @@ onMounted(() => {
             <div class="transfer-detail">
               <div class="detail-row">
                 <span class="label">은행:</span>
-                <span class="value">{{ getBankName(transferDTO.sendBankCode) }}</span>
+                <span class="value">{{
+                  getBankName(transferDTO.sendBankCode)
+                }}</span>
               </div>
               <div class="detail-row">
                 <span class="label">계좌번호:</span>
@@ -517,7 +576,9 @@ onMounted(() => {
               </div>
               <div class="detail-row">
                 <span class="label">이체 금액:</span>
-                <span class="value amount">{{ formatNumber(transferDTO.transactionAmount) }} 원</span>
+                <span class="value amount"
+                  >{{ formatNumber(transferDTO.transactionAmount) }} 원</span
+                >
               </div>
               <div v-if="transferDTO.memo" class="detail-row">
                 <span class="label">메모:</span>
@@ -641,7 +702,8 @@ onMounted(() => {
           <button class="btn-secondary" @click="prevStep">이전</button>
           <button class="btn-primary" @click="confirmTransfer">이체하기</button>
         </div>
-      </div><!-- end 3단계-->
+      </div>
+      <!-- end 3단계-->
     </div>
 
     <!-- 점수 기준 모달창 -->
@@ -726,7 +788,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -734,49 +795,52 @@ onMounted(() => {
 /* CSS 변수 정의 - KB국민은행 공식 브랜드 컬러 */
 .transfer-page {
   /* KB Main Colors */
-  --kb-yellow-positive: #FFBC00;  /* KB Yellow Positive - R255 G188 B0 */
-  --kb-yellow-negative: #FFCC00;  /* KB Yellow Negative - R255 G204 B0 */
-  --kb-gray: #605850;             /* KB Gray - R96 G88 B76 */
-  
+  --kb-yellow-positive: #ffbc00; /* KB Yellow Positive - R255 G188 B0 */
+  --kb-yellow-negative: #ffcc00; /* KB Yellow Negative - R255 G204 B0 */
+  --kb-gray: #605850; /* KB Gray - R96 G88 B76 */
+
   /* KB Sub Colors */
-  --kb-dark-gray: #545049;        /* KB Dark Gray - R84 G80 B69 */
-  --kb-gold: #B8860B;             /* KB Gold (추정) */
-  --kb-silver: #C0C0C0;           /* KB Silver (추정) */
-  
+  --kb-dark-gray: #545049; /* KB Dark Gray - R84 G80 B69 */
+  --kb-gold: #b8860b; /* KB Gold (추정) */
+  --kb-silver: #c0c0c0; /* KB Silver (추정) */
+
   /* Derived Colors */
   --primary: var(--kb-yellow-positive);
-  --primary-light: #FFF4D6;
-  --primary-dark: #E6A600;
+  --primary-light: #fff4d6;
+  --primary-dark: #e6a600;
   --secondary: var(--kb-yellow-negative);
-  --secondary-light: #FFF8E1;
+  --secondary-light: #fff8e1;
   --accent: var(--kb-gray);
-  --accent-light: #F5F4F2;
-  --success: #4CAF50;
+  --accent-light: #f5f4f2;
+  --success: #4caf50;
   --warning: var(--kb-yellow-negative);
-  --danger: #F44336;
-  
+  --danger: #f44336;
+
   /* Gray Scale */
-  --gray-50: #FAFAFA;
-  --gray-100: #F5F5F5;
-  --gray-200: #EEEEEE;
-  --gray-300: #E0E0E0;
-  --gray-400: #BDBDBD;
-  --gray-500: #9E9E9E;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #eeeeee;
+  --gray-300: #e0e0e0;
+  --gray-400: #bdbdbd;
+  --gray-500: #9e9e9e;
   --gray-600: #757575;
   --gray-700: #616161;
   --gray-800: #424242;
   --gray-900: #212121;
-  
-  --white: #FFFFFF;
+
+  --white: #ffffff;
   --black: #000000;
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
   /* Border Radius */
   --radius-sm: 6px;
   --radius: 8px;
@@ -795,7 +859,8 @@ onMounted(() => {
 .transfer-page {
   min-height: 100vh;
   background: var(--gray-50);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, sans-serif;
   color: var(--gray-800);
   line-height: 1.6;
 }
@@ -848,7 +913,11 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--kb-yellow-positive) 0%,
+    var(--primary-dark) 100%
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 16px;
@@ -888,7 +957,8 @@ onMounted(() => {
   font-weight: 600;
   color: var(--kb-gray);
   letter-spacing: -0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 .help-btn {
@@ -948,7 +1018,8 @@ onMounted(() => {
   font-weight: 600;
   font-size: 14px;
   transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.2px;
 }
 
@@ -966,7 +1037,8 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 500;
   color: var(--gray-600);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1010,7 +1082,8 @@ onMounted(() => {
   color: var(--kb-gray);
   margin-bottom: 4px;
   letter-spacing: -0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 .section-header p {
@@ -1018,7 +1091,8 @@ onMounted(() => {
   color: var(--gray-600);
   font-weight: 500;
   line-height: 1.4;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1068,14 +1142,16 @@ onMounted(() => {
   font-weight: 600;
   color: var(--gray-800);
   margin-bottom: 2px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.2px;
 }
 
 .account-number {
   font-size: 13px;
   color: var(--gray-600);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   margin-bottom: 2px;
   font-weight: 500;
   letter-spacing: 0.5px;
@@ -1085,7 +1161,8 @@ onMounted(() => {
   font-size: 12px;
   color: var(--gray-500);
   font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1099,7 +1176,8 @@ onMounted(() => {
   font-weight: 700;
   color: var(--kb-yellow-positive);
   margin-bottom: 2px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.3px;
 }
 
@@ -1107,7 +1185,8 @@ onMounted(() => {
   font-size: 11px;
   color: var(--gray-500);
   font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1123,14 +1202,16 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
   transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 .check-icon {
   color: var(--success);
   font-size: 14px;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 폼 스타일 */
@@ -1158,7 +1239,8 @@ onMounted(() => {
   font-weight: 500;
   color: var(--gray-700);
   margin-bottom: 2px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1172,12 +1254,14 @@ onMounted(() => {
   background: var(--white);
   color: var(--gray-800);
   box-shadow: var(--shadow-sm);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
 .form-input select {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   font-weight: 500;
   letter-spacing: -0.1px;
 }
@@ -1216,7 +1300,8 @@ onMounted(() => {
   background: var(--primary-light);
   border-radius: 6px;
   border: 1px solid var(--kb-yellow-positive);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.2px;
 }
 
@@ -1230,7 +1315,8 @@ onMounted(() => {
   border-radius: 8px;
   margin-top: 4px;
   border: 1px solid var(--kb-yellow-positive);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.3px;
 }
 
@@ -1261,7 +1347,8 @@ onMounted(() => {
   color: var(--kb-gray);
   margin-bottom: 12px;
   letter-spacing: -0.2px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
 }
 
 .account-detail {
@@ -1292,7 +1379,8 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 500;
   color: var(--gray-600);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1300,7 +1388,8 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   color: var(--gray-800);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1319,7 +1408,8 @@ onMounted(() => {
   margin-top: 16px;
 }
 
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
   padding: 12px 24px;
   border-radius: 20px;
   font-size: 14px;
@@ -1328,7 +1418,8 @@ onMounted(() => {
   transition: all 0.2s ease;
   border: none;
   min-width: 100px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.2px;
 }
 
@@ -1370,53 +1461,54 @@ onMounted(() => {
   .main-content {
     padding: 12px;
   }
-  
+
   .step-content {
     padding: 16px;
   }
-  
+
   .step-indicator {
     padding: 8px;
   }
-  
+
   .step-line {
     width: 30px;
     margin: 0 8px;
   }
-  
+
   .account-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
     padding: 12px;
   }
-  
+
   .balance {
     text-align: left;
     margin-right: 0;
   }
-  
+
   .action-buttons {
     flex-direction: column;
     gap: 8px;
   }
-  
-  .btn-primary, .btn-secondary {
+
+  .btn-primary,
+  .btn-secondary {
     width: 100%;
     padding: 10px 20px;
     font-size: 13px;
   }
-  
+
   .section-header {
     padding: 12px;
     margin-bottom: 12px;
   }
-  
+
   .form-section {
     padding: 12px;
     gap: 12px;
   }
-  
+
   .confirmation-card {
     padding: 12px;
     gap: 12px;
@@ -1857,6 +1949,4 @@ onMounted(() => {
 .transfer-item:hover {
   background-color: #f0f0f0;
 }
-
-
 </style>
