@@ -1,9 +1,9 @@
-import axios from 'axios';
+import api from '@/api/axios';
 
 export const calculateAnomalyScore = async (requestBody) => {
   try {
-    const response = await axios.post(
-      '/api/anomaly-detection/calculate',
+    const response = await api.post(
+      '/anomaly-detection/calculate',
       requestBody
     );
     return response;
