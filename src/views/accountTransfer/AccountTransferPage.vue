@@ -5,9 +5,11 @@ import { useTransferStore } from '@/stores/accountTransferStore';
 import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
 import { checkFraudAccount } from '@/api/fraudAccountApi';
 import { favorites, getFavorites } from '@/api/favoritesApi';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const store = useTransferStore();
+const authStore = useAuthStore()
 
 // 거래내역
 // const transactions = ref([])
@@ -322,10 +324,17 @@ const formatDate = (dateStr) => {
 };
 
 onMounted(() => {
-  const userId = 1; // 로그인 유저 ID
-  store.fetchAccounts(userId);
-  getFavorites();
-});
+  // const userId = 1 // 로그인 유저 ID
+  // store.fetchAccounts(userId)
+  // getFavorites()
+    const userId = authStore.currentUserId  // authStore에서 동적 userId 가져오기
+  if (userId) {
+    store.fetchAccounts(userId)
+    getFavorites(userId)
+  } else {
+    console.warn('로그인 정보 없음. 계좌/즐겨찾기 조회 불가')
+  }
+})
 </script>
 
 <template>
