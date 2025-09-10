@@ -7,12 +7,6 @@
           <span class="logo-text">KB 금융 도우미</span>
         </div>
         <div class="nav-actions">
-          <button class="notification-btn">
-            <span class="notification-icon">🔔</span>
-          </button>
-          <button class="profile-btn">
-            <span class="profile-icon">👤</span>
-          </button>
           <button class="mode-toggle-btn" @click="toggleToGuardianMode">
             <span class="toggle-text">보호자 모드</span>
           </button>
@@ -305,33 +299,11 @@
       </div>
     </div>
   </div>
-  <div v-if="showGuardianModal" class="modal-mask">
-    <div class="modal-box">
-      <h5 class="mb-2">보호자 전화번호 등록</h5>
-      <p class="text-muted">이상 이체 시 보호자에게 푸시 알림을 보냅니다.</p>
-
-      <input
-        v-model="guardianInput"
-        class="form-control mb-2"
-        placeholder="010-1234-5678"
-        @keydown.enter="saveGuardianPhone"
-      />
-      <small v-if="errGuardian" class="text-danger">{{ errGuardian }}</small>
-
-      <div class="d-flex justify-content-end gap-2 mt-3">
-        <button class="btn btn-outline-secondary" @click="skipGuardian">
-          나중에
-        </button>
-        <button
-          class="btn btn-primary"
-          :disabled="savingGuardian"
-          @click="saveGuardianPhone"
-        >
-          {{ savingGuardian ? '저장중...' : '저장' }}
-        </button>
-      </div>
-    </div>
-  </div>
+  <GuardianPhoneModal 
+    :open="showGuardianModal" 
+    @close="skipGuardian"
+    @saved="handleGuardianSaved"
+  />
 </template>
 
 <script setup>
@@ -342,14 +314,12 @@ import { getBankInfo, extractBankCode } from '@/utils/bankMapping';
 import { useHelpCodeStore } from '@/stores/helpCode';
 import { useWebSocketUser } from '@/utils/useWebSocketUser';
 import { useScreenShareStore } from '@/stores/screenShare';
+import GuardianPhoneModal from './GuardianPhoneModal.vue';
 import api from '@/api/axios';
 
 // 상태
 const me = ref(null);
 const showGuardianModal = ref(false);
-const guardianInput = ref('');
-const savingGuardian = ref(false);
-const errGuardian = ref('');
 
 const router = useRouter();
 const isLoading = ref(false);
@@ -619,13 +589,6 @@ const toggleConnection = () => {
   }
 };
 
-// ---------- 유틸 (전화번호 정규화/검증) ----------
-function normalizePhone(raw) {
-  return (raw || '').replace(/[^\d]/g, '');
-}
-function isValidKrMobile(num) {
-  return /^01[016789]\d{7,8}$/.test(num);
-}
 
 // ---------- 마운트 시: WebRTC 초기화 대기 & 시그널링 설정 ----------
 onMounted(() => {
@@ -685,26 +648,12 @@ onMounted(async () => {
 });
 
 // ---------- 보호자 번호 저장 ----------
-async function saveGuardianPhone() {
-  errGuardian.value = '';
-  const num = normalizePhone(guardianInput.value);
-  if (!isValidKrMobile(num)) {
-    errGuardian.value = '올바른 휴대전화 번호를 입력해주세요.';
-    return;
-  }
-  try {
-    savingGuardian.value = true;
-    await api.put('/me/guardian-phone', { phone: num }); // PUT /api/me/guardian-phone
-    me.value = { ...(me.value || {}), guardianPhone: num };
-    showGuardianModal.value = false;
-  } catch (e) {
-    console.error('guardian-phone 저장 실패:', e);
-    errGuardian.value = '저장에 실패했습니다. 잠시 후 다시 시도해주세요.';
-  } finally {
-    savingGuardian.value = false;
-  }
-}
 function skipGuardian() {
+  showGuardianModal.value = false;
+}
+
+function handleGuardianSaved(phone) {
+  me.value = { ...(me.value || {}), guardianPhone: phone };
   showGuardianModal.value = false;
 }
 </script>
@@ -827,7 +776,6 @@ function skipGuardian() {
   align-items: center;
 }
 
-.notification-btn,
 .profile-btn {
   background: var(--accent-light);
   border: 1px solid var(--kb-gray);
@@ -841,7 +789,6 @@ function skipGuardian() {
   position: relative;
 }
 
-.notification-btn:hover,
 .profile-btn:hover {
   background: var(--kb-gray);
   transform: translateY(-1px);
@@ -878,7 +825,6 @@ function skipGuardian() {
   font-weight: 600;
 }
 
-.notification-icon,
 .profile-icon {
   font-size: 20px;
   color: var(--kb-gray);
@@ -1858,22 +1804,4 @@ function skipGuardian() {
   }
 }
 
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 1050;
-}
-.modal-box {
-  background: #fff;
-  width: 100%;
-  max-width: 420px;
-  border-radius: 12px;
-  padding: 16px 16px 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
 </style>
