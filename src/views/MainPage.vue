@@ -7,7 +7,15 @@
           <span class="logo-text">KB 금융 도우미</span>
         </div>
         <div class="nav-actions">
-          <button class="mode-toggle-btn" @click="toggleToGuardianMode">
+      <!-- 로그인 안됨: 카카오 로그인 버튼 -->
+      <button v-if="!auth.isLoggedIn" class="mode-toggle-btn login-btn" @click="goLogin">
+        로그인
+      </button>
+      <!-- 로그인 됨: 로그아웃 + (옵션) 보호자 푸시 테스트 -->
+        <button v-else class="mode-toggle-btn logout-btn" @click="kakaoHardLogout">
+    로그아웃
+  </button>
+      <button class="mode-toggle-btn" @click="toggleToGuardianMode">
             <span class="toggle-text">보호자 모드</span>
           </button>
         </div>
@@ -309,6 +317,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 import { createHelpRequest } from '@/api/index';
 import { getBankInfo, extractBankCode } from '@/utils/bankMapping';
 import { useHelpCodeStore } from '@/stores/helpCode';
@@ -317,6 +326,11 @@ import { useScreenShareStore } from '@/stores/screenShare';
 import { useAuthStore } from '@/stores/auth';
 import GuardianPhoneModal from './GuardianPhoneModal.vue';
 import api from '@/api/axios';
+
+const auth = useAuthStore();
+const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
+const LOGOUT_REDIRECT_URI = import.meta.env.VITE_KAKAO_LOGOUT_REDIRECT_URI;
+const REDIRECT_URI = import.meta.env.VITE_KAKAO_REDIRECT_URI;
 
 // 상태
 const me = ref(null);
@@ -683,6 +697,25 @@ function skipGuardian() {
 function handleGuardianSaved(phone) {
   me.value = { ...(me.value || {}), guardianPhone: phone };
   showGuardianModal.value = false;
+}
+// 로그인 
+function goLogin() {
+  router.push({ name: 'login' });
+}
+
+// 로그아웃(내 서비스 로그아웃 + 카카오 로그아웃)
+async function kakaoHardLogout() {
+  try {
+    try { await unregisterPushNotifications(); } catch {}
+    await auth.logout(); // 서버 RT 폐기 + 쿠키 삭제 + 프론트 토큰 비움
+
+    const url = new URL('https://kauth.kakao.com/oauth/logout');
+    url.searchParams.set('client_id', KAKAO_CLIENT_ID);
+    url.searchParams.set('logout_redirect_uri', LOGOUT_REDIRECT_URI);
+    window.location.href = url.toString();
+  } catch (e) {
+    console.error('[kakaoHardLogout] error:', e);
+  }
 }
 </script>
 
@@ -1830,6 +1863,46 @@ function handleGuardianSaved(phone) {
     padding: 12px 20px;
     font-size: 14px;
   }
+}
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1050;
+}
+.modal-box {
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  padding: 16px 16px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+
+.mode-toggle-btn.login-btn {
+  background: var(--success);        /*로그인 */
+  color: var(--white);
+}
+.mode-toggle-btn.login-btn:hover {
+  background: #2e7d32;               /* hover용 진한 초록 */
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* 로그아웃(빨강) 변형 */
+.mode-toggle-btn.logout-btn {
+  background: var(--danger);         /* 로그아웃 */
+  color: var(--white);
+}
+.mode-toggle-btn.logout-btn:hover {
+  background: #b91c1c;               /* hover용 진한 빨강 */
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 </style>
