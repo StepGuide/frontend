@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ref } from 'vue';
+import { useAuthStore } from '@/stores/auth';
 
 export const favorites = ref([]);
 export const userId = ref(1);
@@ -9,10 +10,21 @@ export const userId = ref(1);
 const API_URL = 'http://localhost:8080/api/favorite-account';
 
 // 즐겨찾기 조회
+// export const getFavorites = async () => {
+//   try {
+//     const res = await axios.get(API_URL, {
+//       params: { userId: userId.value },
+//     });
+//     favorites.value = res.data;
+//   } catch (err) {
+//     console.error('즐겨찾기 조회 실패:', err);
+//   }
+// };
 export const getFavorites = async () => {
   try {
+    const authStore = useAuthStore();
     const res = await axios.get(API_URL, {
-      params: { userId: userId.value },
+      params: { userId: authStore.userId }, // 동적 userId
     });
     favorites.value = res.data;
   } catch (err) {
@@ -21,10 +33,24 @@ export const getFavorites = async () => {
 };
 
 // 즐겨찾기 추가
+// export const addFavorite = async (account) => {
+//   try {
+//     await axios.post(API_URL, {
+//       userId: userId.value,
+//       sendBankCode: account.sendBankCode,
+//       sendAccountNumber: account.sendAccountNumber,
+//       sendBankNickname: account.sendBankNickname,
+//     });
+//     await getFavorites(); // 추가 후 목록 갱신
+//   } catch (err) {
+//     console.error('즐겨찾기 추가 실패:', err);
+//   }
+// };
 export const addFavorite = async (account) => {
   try {
+    const authStore = useAuthStore();
     await axios.post(API_URL, {
-      userId: userId.value,
+      userId: authStore.userId,
       sendBankCode: account.sendBankCode,
       sendAccountNumber: account.sendAccountNumber,
       sendBankNickname: account.sendBankNickname,
