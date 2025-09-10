@@ -1,12 +1,17 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTransferStore } from '@/stores/accountTransferStore';
 import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
 import { checkFraudAccount } from '@/api/fraudAccountApi';
+import { favorites, getFavorites } from '@/api/favoritesApi';
 
 const router = useRouter()
 const store = useTransferStore()
+
+// 거래내역
+// const transactions = ref([])
+const transactions = computed(() => store.transactions)
 
 const currentStep = computed(() => store.currentStep)
 
@@ -28,14 +33,35 @@ const isStep2Valid = computed(() => {
          transferDTO.value.transactionAmount > 0
 })
 
-const selectAccount = (account) => {
+
+const selectAccount = async (account) => {
+  await store.selectAccount(account) // store 함수 호출
+
   selectedAccount.value = account
   transferDTO.value.accountId = account.accountId
   transferDTO.value.accountNumber = account.accountNumber
   transferDTO.value.accountName = account.accountName
   transferDTO.value.balance = account.balance
   transferDTO.value.bankCode = account.bankCode
+
+  // 거래내역 불러오기
+  try {
+  const result = await getAccountTransactions(account.accountId)
+
+  // 필드명 확인 필요: created_time vs createdTime
+  transactions.value = result
+    // .filter((tx) => tx.deposit_withdrawal === 'WITHDRAWAL')
+    // .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime)) // 최신순
+    .slice(0, 5)
+
+  console.log('필터링/정렬 후 거래내역:', transactions.value)
+
+  } catch (err) {
+    console.error('거래내역 조회 실패', err)
+    transactions.value = []
+  }
 }
+
 
 const nextStep = async () => {
   if (currentStep.value === 2) {
@@ -231,9 +257,74 @@ const calculateAnomaly = async () => {
   }
 };
 
+// ---- 최근거래내역 관련 ----
+// 최근 거래내역 클릭 시 자동으로 정보 채우기
+const fillTransferInfo = (transfer) => {
+  transferDTO.value.sendBankCode = transfer.sendBankCode
+  transferDTO.value.payeeAccountNumber = transfer.payeeAccountNumber
+  transferDTO.value.accountHolderName = transfer.accountHolderName || ''
+  // transferDTO.value.transactionAmount = transfer.transactionAmount || 0
+}
+
+// watch(selectedAccount, async (newVal) => {
+//   if (newVal && currentStep.value === 2) { // Step2일 때만 fetch
+//     try {
+//       transactions.value = await getAccountTransactions(newVal.accountId)
+//     } catch (err) {
+//       console.error('거래내역 조회 실패', err)
+//       transactions.value = []
+//     }
+//   }
+// }, { immediate: true })
+// watch(selectedAccount, async (newVal) => {
+//   if (newVal && currentStep.value === 2) { 
+//     try {
+//       const result = await getAccountTransactions(newVal.accountId)
+//       transactions.value = result
+//         .filter((tx) => tx.deposit_withdrawal === 'WITHDRAWAL')
+//         .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime)) // 최신순
+//         .slice(0, 5)
+//     } catch (err) {
+//       console.error('거래내역 조회 실패', err)
+//       transactions.value = []
+//     }
+//   }
+// }, { immediate: true })
+watch(selectedAccount, async (newVal) => {
+  if (newVal && currentStep.value === 2) { 
+    try {
+      const result = await getAccountTransactions(newVal.accountId)
+      transactions.value = result
+        // .filter((tx) => tx.deposit_withdrawal === 'WITHDRAWAL')
+        .slice(0, 5) // 백엔드에서 이미 최신순
+    } catch (err) {
+      console.error('거래내역 조회 실패', err)
+      transactions.value = []
+    }
+  }
+}, { immediate: true })
+
+// 즐겨찾기 클릭 시 정보 채우기
+const fillFavoriteInfo = (favorite) => {
+  transferDTO.value.sendBankCode = favorite.sendBankCode
+  transferDTO.value.payeeAccountNumber = favorite.sendAccountNumber
+  transferDTO.value.accountHolderName = favorite.sendBankNickname || ''
+}
+
+// 날짜 포맷팅
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+}
+
 onMounted(() => {
   const userId = 1 // 로그인 유저 ID
   store.fetchAccounts(userId)
+  getFavorites()
 })
 </script>
 
@@ -318,6 +409,34 @@ onMounted(() => {
           <p>받는 분의 계좌 정보를 입력해주세요</p>
         </div>
 
+        <!-- 최근 거래내역 -->
+        <div class="recent-transfers">
+          <h3>최근 거래내역</h3>
+          <div v-if="transactions.length === 0">최근 거래내역이 없습니다.</div>
+          <div v-for="t in transactions.slice(0,5)" :key="t.transactionId" 
+              class="transfer-item" 
+              @click="fillTransferInfo(t)">
+              <span>{{ getBankName(t.sendBankCode) }}</span>
+              <span>{{ t.payeeAccountNumber }}</span>
+              <span>{{  t.accountHolderName }}</span>
+              <span>₩ {{ formatNumber(t.transactionAmount) }}</span>
+              <span>{{ formatDate(t.createdTime) }}</span>
+          </div>
+        </div>
+
+        <!-- 즐겨찾기 계좌 -->
+        <div class="favorite-transfers" v-if="favorites.length">
+          <h3>즐겨찾기 계좌</h3>
+          <div v-for="f in favorites" :key="f.favoriteId" class="transfer-item"
+              @click="fillFavoriteInfo(f)">
+            <span>{{ getBankName(f.sendBankCode) }}</span>
+            <span>{{ f.sendAccountNumber }}</span>
+            <span>{{ f.sendBankNickname }}</span>
+          </div>
+        </div>
+        
+
+        <!--  -->
         <div class="form-section">
           <div class="form-group">
             <label>받는 은행</label>
@@ -1719,5 +1838,25 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
 }
+
+/* 최근거래 내역 관련 */
+.recent-transfers {
+  margin-bottom: 16px;
+}
+
+.transfer-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.transfer-item:hover {
+  background-color: #f0f0f0;
+}
+
 
 </style>

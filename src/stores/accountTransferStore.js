@@ -49,6 +49,9 @@ export const useTransferStore = defineStore('transfer', () => {
     transferDTO.value.balance = account.balance
     transferDTO.value.bankCode = account.bankCode
 
+    // 여기에 확인용 로그 추가
+  console.log('getAccountTransactions:', getAccountTransactions)
+  
     // 거래내역 불러오기
     try {
       transactions.value = await getAccountTransactions(account.accountId)

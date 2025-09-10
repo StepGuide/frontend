@@ -20,13 +20,14 @@ export const getUserAccounts = async (userId) => {
 // 최근 거래 내역 조회
 export const getAccountTransactions = async (accountId) => {
   try {
-    const res = await axios.get(`${API_BASE}/transactions/${accountId}`);
+    const res = await api.get(`/transfer/transactions/${accountId}`);
     return res.data; // List<AccountTransferDTO>
   } catch (err) {
     console.error('거래내역 조회 실패:', err);
     throw err;
   }
 };
+
 
 // 검증
 export const validateTransfer = async (transferDTO) => {
