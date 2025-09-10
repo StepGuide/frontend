@@ -323,7 +323,6 @@ import { getBankInfo, extractBankCode } from '@/utils/bankMapping';
 import { useHelpCodeStore } from '@/stores/helpCode';
 import { useWebSocketUser } from '@/utils/useWebSocketUser';
 import { useScreenShareStore } from '@/stores/screenShare';
-import { useAuthStore } from '@/stores/auth';
 import GuardianPhoneModal from './GuardianPhoneModal.vue';
 import api from '@/api/axios';
 
