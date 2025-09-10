@@ -130,30 +130,69 @@
               <div
                 class="progress-fill"
                 :style="{
-                  width:
-                    ((currentStepIndex + 1) / lessonSteps.length) * 100 + '%',
+                  width: showTableOfContents
+                    ? '0%'
+                    : (lessonContentSteps.length > 1
+                        ? (currentStepIndex / (lessonContentSteps.length - 1)) * 100
+                        : (lessonContentSteps.length === 1 ? 100 : 0)) + '%',
                 }"
               ></div>
             </div>
             <div class="lesson-step-indicator">
-              {{ currentStepIndex + 1 }} / {{ lessonSteps.length }} 단계
+              <span v-if="showTableOfContents">
+                학습 내용 안내
+              </span>
+              <span v-else>
+                {{ currentStepIndex + 1 }} / {{ lessonContentSteps.length }} 단계
+              </span>
             </div>
           </div>
 
           <div
             class="lesson-modal-body"
-            v-if="!isQuizMode && lessonSteps.length"
+            v-if="!isQuizMode && (showTableOfContents || lessonContentSteps.length)"
           >
-            <h4 class="lesson-step-title">
-              {{ lessonSteps[currentStepIndex].title }}
-            </h4>
-            <p class="lesson-step-content">
-              {{ lessonSteps[currentStepIndex].content }}
-            </p>
+            <!-- 학습 내용 설명 표시 (단일 카드) -->
+            <div v-if="showTableOfContents" class="lesson-description single-card">
+              <!-- <h4 class="lesson-step-title">
+                {{ lessonDescriptionTitle }}
+              </h4> -->
+              <p class="lesson-step-content">
+                {{ lessonDescriptionIntro }}
+              </p>
+              <ul class="learning-points-list">
+                <li 
+                  v-for="point in learningPoints" 
+                  :key="point.number"
+                  class="learning-point-list-item"
+                >
+                  <div class="learning-point-list-row">
+                    <span class="learning-point-number">{{ point.number }}</span>
+                    <span class="learning-point-title">{{ point.title }}</span>
+                  </div>
+                  <p class="learning-point-description">{{ point.description }}</p>
+                </li>
+              </ul>
+            </div>
+            <!-- 일반 강의 내용 표시 -->
+            <div v-else>
+              <div class="lesson-step-header">
+                <h4 class="lesson-step-title">
+                  {{ lessonContentSteps[currentStepIndex].title }}
+                </h4>
+                <div class="lesson-step-badges">
+                  <span class="badge badge-key">핵심 개념</span>
+                  <span class="badge badge-easy">쉬운 예시</span>
+                </div>
+              </div>
+              <p class="lesson-step-content">
+                {{ lessonContentSteps[currentStepIndex].content }}
+              </p>
+            </div>
           </div>
 
           <div class="lesson-modal-body" v-else>
-            <h4 class="lesson-step-title">이해도 점검 문제</h4>
+            <h4>이해도 점검 문제</h4>
             <div class="quiz-group">
               <div
                 v-for="(q, idx) in quizQuestions"
@@ -207,16 +246,14 @@
               이전
             </button>
             <button
-              v-if="!isQuizMode && currentStepIndex < lessonSteps.length - 1"
+              v-if="!isQuizMode && (showTableOfContents || currentStepIndex < lessonContentSteps.length - 1)"
               class="btn-primary"
               @click="nextStep"
             >
               다음
             </button>
             <button
-              v-else-if="
-                !isQuizMode && currentStepIndex === lessonSteps.length - 1
-              "
+              v-else-if="!isQuizMode && !showTableOfContents && currentStepIndex === lessonContentSteps.length - 1"
               class="btn-primary"
               @click="startQuiz"
             >
@@ -293,7 +330,7 @@ const lessons = ref([
     id: 1,
     category: 'basic',
     title: '금융이란 무엇인가?',
-    description: '금융의 기본 개념과 중요성에 대해 알아봅니다.',
+    description: '금융이 무엇인지에 대해서 배워요.',
     icon: '💡',
     duration: 15,
     level: '초급',
@@ -499,8 +536,13 @@ const startLesson = (lesson) => {
     return;
   }
   selectedLesson.value = lesson;
-  lessonSteps.value = getLessonContentSteps(lesson);
-  currentStepIndex.value = 0;
+  const split = getLessonContentSplit(lesson);
+  lessonContentSteps.value = split.contentSteps;
+  lessonDescriptionTitle.value = split.descriptionTitle;
+  lessonDescriptionIntro.value = split.descriptionIntro;
+  learningPoints.value = split.learningPoints;
+  currentStepIndex.value = 0; // 목차부터 시작
+  showTableOfContents.value = true; // 목차 표시 활성화
   isLessonOpen.value = true;
 };
 
@@ -513,14 +555,22 @@ const requestHelp = () => router.push('/');
 // 강의 모달 상태 및 동작
 const isLessonOpen = ref(false);
 const selectedLesson = ref(null);
-const lessonSteps = ref([]);
+const lessonContentSteps = ref([]);
+const lessonDescriptionTitle = ref('');
+const lessonDescriptionIntro = ref('');
+const learningPoints = ref([]);
 const currentStepIndex = ref(0);
+const showTableOfContents = ref(true);
 
 const closeLesson = () => {
   isLessonOpen.value = false;
   selectedLesson.value = null;
-  lessonSteps.value = [];
+  lessonContentSteps.value = [];
+  lessonDescriptionTitle.value = '';
+  lessonDescriptionIntro.value = '';
+  learningPoints.value = [];
   currentStepIndex.value = 0;
+  showTableOfContents.value = true;
   isQuizMode.value = false;
   quizQuestions.value = [];
   quizAnswers.value = [];
@@ -529,12 +579,25 @@ const closeLesson = () => {
 };
 
 const nextStep = () => {
-  if (currentStepIndex.value < lessonSteps.value.length - 1) {
+  // 학습 내용 설명에서 다음 버튼을 누르면 콘텐츠 1단계로 이동
+  if (showTableOfContents.value) {
+    showTableOfContents.value = false;
+    currentStepIndex.value = 0; // 콘텐츠 첫 단계
+    return;
+  }
+  
+  if (currentStepIndex.value < Math.max(lessonContentSteps.value.length - 1, 0)) {
     currentStepIndex.value++;
   }
 };
 
 const prevStep = () => {
+  // 콘텐츠 첫 단계에서 이전 버튼을 누르면 학습 내용 설명으로 돌아가기
+  if (!showTableOfContents.value && currentStepIndex.value === 0) {
+    showTableOfContents.value = true;
+    return;
+  }
+  
   if (currentStepIndex.value > 0) {
     currentStepIndex.value--;
   }
@@ -565,25 +628,35 @@ const completeLesson = () => {
   closeLesson();
 };
 
-// 강의별 단계 콘텐츠 생성
-const getLessonContentSteps = (lesson) => {
+// 강의별 설명/콘텐츠 분리 생성
+const getLessonContentSplit = (lesson) => {
   const byCategory = {
     basic: [
-      {
-        title: '안심 금융의 기본',
-        content:
-          '큰 글씨 설정과 간단한 메뉴만 사용하세요. 중요한 일(이체·대출)은 서두르지 말고 가족이나 직원에게 확인해 주세요.',
-      },
-      {
-        title: '돈 관리 순서',
-        content:
-          '연금·이자 등 수입 확인 → 생활비 분리 → 비상자금 따로 보관 → 남는 돈은 예금으로 안전하게.',
-      },
-      {
-        title: '창구 이용 팁',
-        content:
-          '전화로 급하게 이체 요청받으면 은행에 직접 방문해 확인하세요. 직원에게 “사기 의심”이라고 먼저 알려주세요.',
-      },
+    {
+  title: '입금',
+  content: '현금을 은행 계좌에 넣는 것을 말합니다. 예: 연금을 받아 통장에 넣는 것.',
+},
+{
+  title: '출금',
+  content: '은행에 맡긴 돈을 찾아서 쓰는 것을 말합니다. 예: ATM에서 생활비를 찾는 것.',
+},
+{
+  title: '송금',
+  content: '내 계좌에 있는 돈을 다른 사람 계좌로 보내는 것을 말합니다. 예: 손주에게 용돈 보내기.',
+},
+{
+  title: '통장',
+  content: '내 돈이 들어오고 나간 기록을 적어 두는 책자입니다.',
+},
+{
+  title: '계좌',
+  content: '은행에서 돈을 맡아두는 내 전용 번호입니다. 돈을 주고받을 때 꼭 필요한 주소 같은 역할을 합니다.',
+},
+{
+  title: '이자',
+  content: '은행에 돈을 맡기면 은행이 주는 보상이고, 돈을 빌리면 내가 내야 하는 비용입니다.',
+},
+
     ],
     security: [
       {
@@ -594,7 +667,7 @@ const getLessonContentSteps = (lesson) => {
       {
         title: '의심 전화 대처',
         content:
-          '“지금 바로” “검찰/금감원” “계좌가 위험” 같은 말은 사기입니다. 끊고 공식 번호로 다시 걸어 확인하세요.',
+          '"지금 바로" "검찰/금감원" "계좌가 위험" 같은 말은 사기입니다. 끊고 공식 번호로 다시 걸어 확인하세요.',
       },
       {
         title: '전화/문자 차단',
@@ -606,7 +679,7 @@ const getLessonContentSteps = (lesson) => {
       {
         title: '메신저·보이스피싱',
         content:
-          '자녀·지인을 사칭해 “휴대폰 고장, 급히 이체” 요구하면 100% 사기입니다. 반드시 직접 통화로 확인하세요.',
+          '자녀·지인을 사칭해 "휴대폰 고장, 급히 이체" 요구하면 100% 사기입니다. 반드시 직접 통화로 확인하세요.',
       },
       {
         title: '가짜 사이트 구별',
@@ -647,8 +720,62 @@ const getLessonContentSteps = (lesson) => {
     { title: '마무리', content: '체크리스트와 안전 수칙을 점검합니다.' },
   ];
 
-  const intro = { title: lesson.title, content: lesson.description };
-  return [intro, ...generic];
+  // 학습 내용 설명 + 학습 포인트 (포인트는 콘텐츠와 별도 소스)
+  const descriptionTitle = '이 강의에서 배울 내용';
+  const descriptionIntro = `${lesson.title}을 통해 다음과 같은 내용을 학습하게 됩니다.`;
+  const contentSteps = [{ title: lesson.title, content: lesson.description }, ...generic];
+  const learningCore = getLearningPointsForCategory(lesson);
+  const points = learningCore.map((step, index) => ({
+    number: index + 1,
+    title: step.title,
+    description: step.content,
+  }));
+
+  return {
+    descriptionTitle,
+    descriptionIntro,
+    learningPoints: points,
+    contentSteps,
+  };
+};
+
+// 학습 포인트 전용 데이터 (콘텐츠와 별도로 구성)
+const getLearningPointsForCategory = (lesson) => {
+  const byCategory = {
+    basic: [
+        {
+    title: '금융기관이 어떤일을 하는지 알아봅니다.',
+    content:
+      '은행, 증권사 같은 금융기관의 기본적인 역할을 배웁니다.',
+  },
+  {
+    title: '금융개념을 익혀봅니다.',
+    content:
+      '입금, 출금, 송금 등 생활 속에서 자주 쓰이는 기본 용어를 배웁니다.',
+  },
+    ],
+    security: [
+      { title: '인증 보안', content: '비밀번호, 생체인증, OTP의 안전한 사용 원칙.' },
+      { title: '의심 연락 대응', content: '공식 채널 재확인과 정보 미공유 원칙.' },
+      { title: '기기/네트워크', content: '기기 잠금, 최신 업데이트, 안전한 네트워크 사용.' },
+    ],
+    phishing: [
+      { title: '사칭 식별', content: '메신저/보이스피싱의 전형적 화법과 징후.' },
+      { title: '링크 검증', content: 'URL 철자·자물쇠·공식 주소 확인 습관.' },
+      { title: '피해 최소화', content: '즉시 신고/이체중지, 증거 보존 방법.' },
+    ],
+    digital: [
+      { title: '앱 안전 시작', content: '공식 스토어 설치와 권한 설정 최적화.' },
+      { title: '송금 체크', content: '수취인명/금액 이중확인 및 소액 테스트 송금.' },
+      { title: '환경 설정', content: '글자 크기/고대비 등 접근성 향상으로 실수 감소.' },
+    ],
+  };
+
+  return byCategory[lesson.category] || [
+    { title: '개요 포인트', content: `${lesson.title}의 핵심 포인트를 정리합니다.` },
+    { title: '실천 팁', content: '바로 적용 가능한 체크리스트를 제공합니다.' },
+    { title: '유의 사항', content: '주의할 점과 흔한 실수를 정리합니다.' },
+  ];
 };
 
 // 퀴즈 상태 및 로직
@@ -686,28 +813,28 @@ const quizIsCorrect = (idx) => {
 
 const getQuizForCategory = (category) => {
   const map = {
-    basic: [
-      {
-        question: '전화로 급히 이체 요청을 받았을 때 올바른 행동은?',
-        options: [
-          '요청대로 바로 이체한다',
-          '가족/은행 직원에게 먼저 확인한다',
-          '비밀번호를 알려준다',
-          '요청자가 시키는 앱을 설치한다',
-        ],
-        answer: '가족/은행 직원에게 먼저 확인한다',
-      },
-      {
-        question: '안전한 돈 관리 순서로 적절한 것은?',
-        options: [
-          '수입 확인 → 생활비 분리 → 비상자금 확보 → 예금',
-          '대출 먼저 받고 소비',
-          '소비 후 잔액 예금',
-          '증권 앱부터 설치',
-        ],
-        answer: '수입 확인 → 생활비 분리 → 비상자금 확보 → 예금',
-      },
+   basic: [
+  {
+    question: '은행 계좌에 현금을 넣는 것을 무엇이라고 하나요?',
+    options: [
+      '출금',
+      '입금',
+      '송금',
+      '투자',
     ],
+    answer: '입금',
+  },
+  {
+    question: '은행에 돈을 맡기면 받는 보상은 무엇이며, 돈을 빌리면 무엇을 내야 하나요?',
+    options: [
+      '이자 / 이자',
+      '수수료 / 수수료',
+      '이자 / 수수료',
+      '수수료 / 이자',
+    ],
+    answer: '이자 / 이자',
+  },
+],
     security: [
       {
         question: 'OTP 번호를 요구하는 전화에 대한 올바른 대응은?',
@@ -1329,17 +1456,80 @@ const getQuizForCategory = (category) => {
   padding: 16px 20px 8px 20px;
 }
 
-.lesson-step-title {
+/* .lesson-step-title {
   font-size: 16px;
   font-weight: 700;
   color: var(--kb-gray);
   margin-bottom: 8px;
+} */
+.lesson-step-title {
+  font-size: 20px;              /* 글자 크기 키움 */
+  font-weight: 800;             /* 두껍게 */
+  color: #000;                  /* 검정으로 대비 강화 */
+  background-color: #fff9c4;   /* 연한 노란색 배경으로 시선 유도 */
+  border: 2px solid #ffd600;    /* 카드 테두리 강조 */
+  border-radius: 12px;           /* 둥근 모서리 */
+  padding: 12px 16px;            /* 안쪽 여백 충분히 */
+  margin-bottom: 16px;           /* 아래 여백 늘려 시각적 구분 */
+  line-height: 1.6;             /* 줄 간격 넉넉히 */
+  letter-spacing: 0.5px;        /* 자간 약간 늘림 */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 그림자로 입체감 */
+}
+
+.lesson-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lesson-step-badges {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.badge-key {
+  background: #eef9ff;
+  color: #035c91;
+  border-color: #cdeeff;
+}
+
+.badge-easy {
+  background: #fff8e6;
+  color: #8a5b00;
+  border-color: #ffe0a6;
 }
 
 .lesson-step-content {
+  position: relative;
   font-size: 14px;
-  color: var(--gray-700);
-  line-height: 1.7;
+  color: var(--gray-800);
+  line-height: 1.8;
+  background: #fffdfa;
+  border-left: 4px solid var(--kb-yellow-positive);
+  padding: 12px 12px 12px 14px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--gray-200);
+}
+
+.lesson-step-content::before {
+  content: '“';
+  position: absolute;
+  left: -10px;
+  top: -6px;
+  font-size: 28px;
+  color: rgba(255, 188, 0, 0.35);
+  pointer-events: none;
 }
 
 .lesson-modal-footer {
@@ -1423,6 +1613,76 @@ const getQuizForCategory = (category) => {
   font-size: 14px;
   font-weight: 800;
   color: var(--kb-yellow-positive);
+}
+
+/* 학습 내용 설명 스타일 */
+.lesson-description {
+  padding: 16px 0;
+}
+
+.lesson-description.single-card {
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.learning-points-list {
+  margin-top: 16px;
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.learning-point-list-item {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+
+.learning-point-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.learning-point-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--kb-yellow-positive);
+  color: var(--white);
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.learning-point-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--kb-gray);
+  flex: 1;
+}
+
+.learning-point-description {
+  font-size: 14px;
+  color: var(--gray-700);
+  line-height: 1.7;
+  margin: 0;
+  padding-left: 40px;
+  background: #fafafa;
+  border: 1px dashed var(--gray-200);
+  border-radius: 8px;
+  padding: 10px 12px 10px 40px;
 }
 
 /* 반응형 디자인 */
