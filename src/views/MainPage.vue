@@ -20,7 +20,7 @@
       </div>
     </nav>
 
-    <!-- 숨겨진 비디오 요소 (WebRTC용) -->
+    <!-- 숨겨진 비디오 요소 (WebRTC 용) -->
     <video
       ref="localVideo"
       autoplay
