@@ -244,8 +244,6 @@ async function sendGuardianAlert() {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: center;
-  justify-content: center;
 }
 
 .kakao-login-btn {
@@ -254,15 +252,40 @@ async function sendGuardianAlert() {
   padding: 0;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  margin: 0 auto;
-  width: fit-content;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.kakao-login-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: var(--radius-lg);
 }
 
 .kakao-login-btn:hover {
   transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.kakao-login-btn:hover::before {
+  opacity: 1;
 }
 
 .kakao-login-btn:active {
@@ -277,7 +300,6 @@ async function sendGuardianAlert() {
   box-shadow: var(--shadow);
   transition: all 0.2s ease;
   display: block;
-  margin: 0 auto;
 }
 
 .kakao-login-btn:hover .kakao-login-image {
