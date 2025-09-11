@@ -67,7 +67,7 @@
         <div class="account-list">
           <div 
             v-for="account in accounts" 
-            :key="account.id"
+            :key="account.userid"
             class="account-card"
           >
             <div class="card-content">
@@ -103,8 +103,11 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getBankInfo } from '@/utils/bankMapping.js'
 import { Chart, registerables } from 'chart.js'
+import { useAuthStore } from '@/stores/auth'
+import { getUserAccounts } from '@/api/accountTransferApi'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 // Chart.js 등록
 Chart.register(...registerables)
@@ -114,86 +117,16 @@ const showAssets = ref(true)
 const currentMonth = ref('2024년 1월')
 const chartInstance = ref(null)
 
-// 계좌 목록 (샘플 데이터)
-const accounts = ref([
-  {
-    id: 1,
-    bankCode: 'KB',
-    bankName: 'KB국민은행',
-    accountNumber: '123-456789-01-234',
-    accountName: '김영희',
-    accountType: '입출금통장',
-    balance: 2450000,
-    change: 50000,
-    lastTransaction: '2024.01.15',
-    status: 'active',
-    isPrimary: true,
-    transactions: [
-      { type: 'income', amount: 2500000, date: '2024.01.01', description: '급여' },
-      { type: 'expense', amount: -150000, date: '2024.01.05', description: '카드결제' },
-      { type: 'expense', amount: -200000, date: '2024.01.10', description: '이체' },
-      { type: 'income', amount: 50000, date: '2024.01.12', description: '이자' }
-    ]
-  },
-  {
-    id: 2,
-    bankCode: 'KB',
-    bankName: 'KB국민은행',
-    accountNumber: '987-654321-02-345',
-    accountName: '김영희',
-    accountType: '적금통장',
-    balance: 1200000,
-    change: 100000,
-    lastTransaction: '2024.01.14',
-    status: 'active',
-    isPrimary: false,
-    transactions: [
-      { type: 'income', amount: 100000, date: '2024.01.01', description: '적금 납입' },
-      { type: 'income', amount: 100000, date: '2024.01.14', description: '적금 납입' },
-      { type: 'expense', amount: -50000, date: '2024.01.20', description: '적금 해지 수수료' }
-    ]
-  },
-  {
-    id: 3,
-    bankCode: 'SHINHAN',
-    bankName: '신한은행',
-    accountNumber: '110-123-456789',
-    accountName: '김영희',
-    accountType: '입출금통장',
-    balance: 850000,
-    change: -25000,
-    lastTransaction: '2024.01.13',
-    status: 'active',
-    isPrimary: false,
-    transactions: [
-      { type: 'expense', amount: -100000, date: '2024.01.08', description: 'ATM출금' },
-      { type: 'expense', amount: -75000, date: '2024.01.13', description: '카드결제' },
-      { type: 'expense', amount: -120000, date: '2024.01.18', description: '온라인 쇼핑' },
-      { type: 'income', amount: 30000, date: '2024.01.22', description: '적립금' }
-    ]
-  }
-])
+// 계좌 목록 (API 연동)
+const accounts = ref([])
 
-// 월별 수입/지출 데이터 (실제 거래 데이터에서 계산)
-const monthlyIncome = computed(() => {
-  return accounts.value.reduce((total, account) => {
-    return total + account.transactions
-      .filter(transaction => transaction.type === 'income')
-      .reduce((sum, transaction) => sum + transaction.amount, 0)
-  }, 0)
-})
-
-const monthlyExpense = computed(() => {
-  return Math.abs(accounts.value.reduce((total, account) => {
-    return total + account.transactions
-      .filter(transaction => transaction.type === 'expense')
-      .reduce((sum, transaction) => sum + transaction.amount, 0)
-  }, 0))
-})
+// 월별 수입/지출 데이터 (예시: 거래 데이터가 없으면 0 처리)
+const monthlyIncome = computed(() => 0)
+const monthlyExpense = computed(() => 0)
 
 // 계산된 속성
 const totalAssets = computed(() => {
-  return accounts.value.reduce((sum, account) => sum + account.balance, 0)
+  return accounts.value.reduce((sum, account) => sum + (account.balance || 0), 0)
 })
 
 
@@ -241,14 +174,14 @@ const getStatusText = (status) => {
 const viewTransactions = (account) => {
   router.push({
     path: '/inquiry',
-    query: { accountId: account.id }
+    query: { accountId: account.accountId }
   })
 }
 
 const transfer = (account) => {
   router.push({
-    path: '/transfer',
-    query: { fromAccount: account.id }
+    path: '/accountTransfer',
+    query: { accountId: account.accountId }
   })
 }
 
@@ -360,8 +293,19 @@ const createChart = () => {
   })
 }
 
-// 컴포넌트 마운트 시 차트 생성
-onMounted(() => {
+// 컴포넌트 마운트 시 데이터 로드 및 차트 생성
+onMounted(async () => {
+  const userId = authStore.currentUserId
+  if (userId) {
+    try {
+      const data = await getUserAccounts(userId)
+      accounts.value = Array.isArray(data) ? data : []
+    } catch (e) {
+      console.error('계좌 불러오기 실패', e)
+      accounts.value = []
+    }
+  }
+
   nextTick(() => {
     createChart()
   })

@@ -200,13 +200,6 @@
 
       <!-- 계좌 정보 -->
       <div class="account-overview">
-        <div class="section-header">
-          <h2 v-tts:SERVICE_GUIDE.hover="'ACCOUNT_INFO'">내 계좌 현황</h2>
-          <button class="view-all-btn" @click="goToAccountOverview"
-          v-tts:INTERACTION_GUIDE.hover="'BUTTON_HOVER'">
-            전체보기
-          </button>
-        </div>
         <div class="account-grid">
           <div
             class="account-card primary"
@@ -222,8 +215,8 @@
             </div>
             <div class="balance-info">
               <div class="balance-label">총 잔액</div>
-              <div class="balance-amount">₩ 2,450,000</div>
-              <div class="account-number">{{ accountNumber }}</div>
+              <div class="balance-amount">₩ {{ formatNumber(totalBalance) }}</div>
+              <div class="account-number">{{ primaryAccountNumber }}</div>
             </div>
             <div class="card-actions">
               <button
@@ -233,35 +226,39 @@
               >
                 이체
               </button>
-              <button
-                class="action-btn"
-                @click="goToInquiry"
-                v-tts:SERVICE_GUIDE.focus="'ACCOUNT_INFO'"
-              >조회</button>
+              <button class="view-all-btn" @click="goToAccountOverview"
+          v-tts:INTERACTION_GUIDE.hover="'BUTTON_HOVER'">
+            전체보기
+          </button>
             </div>
           </div>
 
           <div class="account-card secondary">
             <div class="card-header">
-              <div class="card-icon">📊</div>
-              <div class="card-title">최근 거래</div>
+               <div class="card-title">최근 거래</div>
             </div>
             <div class="transaction-list">
-              <div class="transaction-item">
+              <div
+                v-for="t in recentTransactions"
+                :key="t.id"
+                class="transaction-item"
+              >
                 <div class="transaction-info">
-                  <span class="transaction-type income">입금</span>
-                  <span class="transaction-desc">월급</span>
+                  <span class="transaction-type" :class="t.amount > 0 ? 'income' : 'expense'">{{ t.amount > 0 ? '입금' : '출금' }}</span>
+                  <span class="transaction-desc">{{ t.description || '거래' }}</span>
                 </div>
-                <span class="transaction-amount income">+₩ 500,000</span>
-              </div>
-              <div class="transaction-item">
-                <div class="transaction-info">
-                  <span class="transaction-type expense">출금</span>
-                  <span class="transaction-desc">ATM</span>
-                </div>
-                <span class="transaction-amount expense">-₩ 50,000</span>
+                <span class="transaction-amount" :class="t.amount > 0 ? 'income' : 'expense'">
+                  {{ t.amount > 0 ? '+' : '-' }}₩ {{ formatNumber(Math.abs(t.amount)) }}
+                </span>
               </div>
             </div>
+            <button
+                class="action-btn"
+                @click="goToInquiry"
+                v-tts:SERVICE_GUIDE.focus="'ACCOUNT_INFO'"
+              >
+                조회
+              </button>
           </div>
         </div>
       </div>
@@ -579,27 +576,46 @@ watch(isWebSocketConnected, (newConnected, oldConnected) => {
 })
 
 // 계좌 정보
-const accountNumber = ref('004-123456-78-90');
-const secondaryAccountNumber = ref('004-987654-32-10');
+// 메인 계좌/총잔액/최근 거래 (API 연동)
+const primaryAccount = ref(null)
+const primaryAccountNumber = computed(() => primaryAccount.value?.accountNumber || '')
+const totalBalance = ref(0)
+const recentTransactions = ref([])
 
 // 은행 정보
 const primaryBankInfo = computed(() => {
-  const bankCode = extractBankCode(accountNumber.value);
+  const bankCode = extractBankCode(primaryAccountNumber.value);
   return getBankInfo(bankCode);
 });
-const secondaryBankInfo = computed(() => {
-  const bankCode = extractBankCode(secondaryAccountNumber.value);
-  return getBankInfo(bankCode);
-});
+const secondaryBankInfo = computed(() => getBankInfo('004'))
 
 // 라우팅
 const toggleToGuardianMode = () => router.push('/guardian');
-const goToTransfer = () => router.push('/accountTransfer');
-const goToInquiry = () => router.push('/inquiry');
+const goToTransfer = () => {
+  console.log('[MainPage] goToTransfer clicked, primaryAccount:', primaryAccount.value)
+  if (primaryAccount.value?.accountId) {
+    router.push({ path: '/accountTransfer', query: { accountId: primaryAccount.value.accountId } })
+  } else {
+    console.warn('[MainPage] primaryAccount.accountId 없음. 일반 이동 처리')
+    router.push('/accountTransfer')
+  }
+}
+const goToInquiry = () => {
+  console.log('[MainPage] goToInquiry clicked, primaryAccount:', primaryAccount.value)
+  if (primaryAccount.value?.accountId) {
+    router.push({ path: '/inquiry', query: { accountId: primaryAccount.value.accountId } })
+  } else {
+    console.warn('[MainPage] primaryAccount.accountId 없음. 일반 이동 처리')
+    router.push('/inquiry')
+  }
+}
 const goToAccountOverview = () => router.push('/account-overview');
 const goToPractice = () => router.push('/practice/PracticeMainPage');
 const goToAccountFavorites = () => router.push('/account-favorites');
 const goToEducation = () => router.push('/education');
+
+// 숫자 포맷터
+const formatNumber = (num) => new Intl.NumberFormat('ko-KR').format(num || 0)
 
 // 도움 요청 코드 생성
 const generateHelpCode = async () => {
@@ -1004,6 +1020,61 @@ onMounted(async () => {
     } else {
       console.error('💥 예상치 못한 에러:', e);
     }
+  }
+  // 추가: 계좌/거래 조회 (백엔드 오류 대비 안전 가드)
+  try {
+    const userId = authStore.currentUserId
+    console.log('[MainPage] userId:', userId)
+    if (userId) {
+      const { getUserAccounts, getAccountTransactions, getFirstAccountTransfer } = await import('@/api/accountTransferApi')
+
+      // 1) 전체 계좌 먼저 조회해 총잔액 계산 및 기본 후보 선정
+      let accounts = []
+      try {
+        accounts = await getUserAccounts(userId)
+        console.log('[MainPage] getUserAccounts result (len):', accounts?.length, accounts)
+        totalBalance.value = (accounts || []).reduce((sum, a) => sum + (a.balance || 0), 0)
+        console.log('[MainPage] totalBalance:', totalBalance.value)
+        if (!primaryAccount.value && accounts && accounts.length) {
+          primaryAccount.value = accounts[0]
+          console.log('[MainPage] primaryAccount fallback set from accounts[0]:', primaryAccount.value)
+        }
+      } catch (e) {
+        console.error('[MainPage] getUserAccounts failed:', e?.message || e)
+      }
+
+      // 2) 기본 계좌 API가 있으면 우선 적용 (실패해도 화면은 유지)
+      try {
+        const first = await getFirstAccountTransfer(userId)
+        console.log('[MainPage] getFirstAccountTransfer result:', first)
+        if (first && first.accountId) {
+          primaryAccount.value = first
+          console.log('[MainPage] primaryAccount set (from Oneaccounts):', primaryAccount.value)
+        }
+      } catch (e) {
+        console.warn('[MainPage] getFirstAccountTransfer failed (will use fallback):', e?.message || e)
+      }
+
+      // 3) 최근 거래 조회 (primaryAccount가 확정된 경우만)
+      try {
+        if (primaryAccount.value?.accountId) {
+          const tx = await getAccountTransactions(primaryAccount.value.accountId)
+          console.log('[MainPage] recent transactions raw:', tx)
+          recentTransactions.value = (tx || []).slice(0, 5).map((t) => ({
+            id: t.transactionId,
+            amount: (t.depositWithdrawal === 'DEPOSIT' ? 1 : -1) * (t.transactionAmount || 0),
+            description: t.memo || ''
+          }))
+          console.log('[MainPage] recentTransactions mapped:', recentTransactions.value)
+        } else {
+          console.warn('[MainPage] primaryAccount.accountId 없음. 최근 거래 조회 생략')
+        }
+      } catch (e) {
+        console.error('[MainPage] getAccountTransactions failed:', e?.message || e)
+      }
+    }
+  } catch (err) {
+    console.error('메인 계좌/거래 조회 실패(outer):', err?.message || err, err)
   }
 });
 
@@ -1706,8 +1777,8 @@ async function kakaoHardLogout() {
 }
 
 .view-all-btn {
-  background: var(--accent-light);
-  color: var(--kb-gray);
+  background: #605850;
+  color: #ffffff;
   border: 1px solid var(--kb-gray);
   font-size: 16px;
   font-weight: 600;
@@ -2241,5 +2312,19 @@ async function kakaoHardLogout() {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
-
+.card-actions .action-btn,
+.card-actions .view-all-btn {
+  flex: 1;               /* 두 버튼이 동일한 너비를 가지도록 */
+  min-width: 0;          /* flex-grow와 충돌하지 않게 */
+  padding: 12px 20px;    /* 높이와 내부 여백 동일하게 */
+  font-size: 14px;       /* 글자 크기 동일하게 */
+  border-radius: var(--radius-xl); /* 모서리 동일하게 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;              /* 아이콘과 글자 간격 */
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
 </style>

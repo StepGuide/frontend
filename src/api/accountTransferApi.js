@@ -28,6 +28,17 @@ export const getAccountTransactions = async (accountId) => {
   }
 };
 
+// 제일 위(기본) 계좌 조회
+export const getFirstAccountTransfer = async (userId) => {
+  try {
+    const res = await api.get(`/transfer/oneaccounts/${userId}`);
+    return res.data; // AccountTransferDTO
+  } catch (err) {
+    console.error('기본 계좌 조회 실패:', err);
+    throw err;
+  }
+};
+
 
 // 검증
 export const validateTransfer = async (transferDTO) => {
