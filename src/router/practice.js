@@ -1,10 +1,5 @@
 export default [
   {
-    path: '/practice/PracticeMainPage',
-    name: 'practiceMainPage',
-    component: () => import('../views/practice/PracticeMainPage.vue'),
-  },
-  {
     path: '/practice/PracticeSelectPage',
     name: 'practiceSelectPage',
     component: () => import('../views/practice/PracticeSelectPage.vue'),
@@ -18,5 +13,10 @@ export default [
     path: '/practice/real/:type',
     name: 'realPractice',
     component: () => import('../views/practice/RealPracticePage.vue'),
+  },
+  {
+    path: '/practice/real/complete',
+    name: 'realPracticeComplete',
+    component: () => import('../views/practice/RealPracticeComplete.vue'),
   },
 ];

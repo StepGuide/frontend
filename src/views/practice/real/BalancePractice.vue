@@ -22,40 +22,20 @@
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
       <!-- 상단 총 잔액 섹션 -->
-
-      <!-- 연습 모드 안내 -->
-      <div class="practice-notice">
-        <div class="notice-card">
-          <div class="notice-icon">🛡️</div>
-          <div class="notice-content">
-            <h3>안전한 연습 환경</h3>
-            <p>
-              실제 계좌에 영향을 주지 않는 가상 환경에서 금융 서비스를
-              연습해보세요.
-            </p>
-          </div>
-        </div>
-      </div>
       <div class="total-balance-section">
         <div class="balance-header">
           <div class="balance-info">
             <h2>총 잔액(예금, 펀드, 신탁/ISA)</h2>
             <div class="balance-toggle">
               <span class="toggle-label">잔액보기</span>
-              <button
-                class="toggle-switch"
-                :class="{ active: showAssets }"
-                @click="toggleAssetVisibility"
-              >
+              <button class="toggle-switch" :class="{ active: showAssets }" @click="toggleAssetVisibility">
                 <span class="toggle-slider"></span>
               </button>
             </div>
           </div>
         </div>
         <div class="total-balance-amount">
-          <span v-if="showAssets" class="balance-text"
-            >₩ {{ formatNumber(totalAssets) }}</span
-          >
+          <span v-if="showAssets" class="balance-text">₩ {{ formatNumber(totalAssets) }}</span>
           <span v-else class="hidden-balance">••••••••</span>
         </div>
         <div class="balance-note">
@@ -66,19 +46,12 @@
       <!-- 계좌 목록 헤더 -->
       <div class="account-list-header">
         <div class="list-header-info">
-          <h3>
-            총 예금 잔액 ₩ {{ formatNumber(totalAssets) }}({{
-              accounts.length
-            }}계좌)
-          </h3>
+          <h3>총 예금 잔액 ₩ {{ formatNumber(totalAssets) }}({{ accounts.length }}계좌)</h3>
         </div>
         <div class="account-category">
           <div class="category-info">
             <span class="category-icon">●</span>
-            <span class="category-text"
-              >입출금 ({{ accounts.length }}계좌) | 잔액 ₩
-              {{ formatNumber(totalAssets) }}</span
-            >
+            <span class="category-text">입출금 ({{ accounts.length }}계좌) | 잔액 ₩ {{ formatNumber(totalAssets) }}</span>
           </div>
           <button class="sort-btn">계좌순서변경</button>
         </div>
@@ -92,19 +65,15 @@
         </div>
 
         <div class="account-list">
-          <div
-            v-for="account in accounts"
-            :key="account.id"
+          <div 
+            v-for="account in accounts" 
+            :key="account.userid"
             class="account-card"
           >
             <div class="card-content">
               <div class="account-info">
                 <div class="account-type">
-                  <img
-                    :src="getBankInfo(account.bankCode).image"
-                    :alt="getBankInfo(account.bankCode).name"
-                    class="bank-logo"
-                  />
+                  <img :src="getBankInfo(account.bankCode).image" :alt="getBankInfo(account.bankCode).name" class="bank-logo" />
                   {{ account.accountType }}
                 </div>
                 <div class="account-number">{{ account.accountNumber }}</div>
@@ -113,20 +82,14 @@
               <div class="account-balance">
                 <div class="balance-label">잔액</div>
                 <div class="balance-amount">
-                  <span v-if="showAssets"
-                    >{{ formatNumber(account.balance) }}원</span
-                  >
+                  <span v-if="showAssets">{{ formatNumber(account.balance) }}원</span>
                   <span v-else class="hidden-amount">••••••원</span>
                 </div>
               </div>
             </div>
             <div class="card-actions">
-              <button class="action-btn" @click="viewTransactions(account)">
-                조회
-              </button>
-              <button class="action-btn" @click="transfer(account)">
-                이체
-              </button>
+              <button class="action-btn" @click="viewTransactions(account)">조회</button>
+              <button class="action-btn" @click="transfer(account)">이체</button>
             </div>
           </div>
         </div>
@@ -136,405 +99,285 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { getBankInfo } from '@/utils/bankMapping.js';
-import { Chart, registerables } from 'chart.js';
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { getBankInfo } from '@/utils/bankMapping.js'
+import { Chart, registerables } from 'chart.js'
 
-const router = useRouter();
+const router = useRouter()
 
 // Chart.js 등록
-Chart.register(...registerables);
+Chart.register(...registerables)
 
 // 반응형 데이터
-const showAssets = ref(true);
-const currentMonth = ref('2024년 1월');
-const chartInstance = ref(null);
+const showAssets = ref(true)
+const currentMonth = ref('2024년 1월')
+const chartInstance = ref(null)
 
-// 계좌 목록 (샘플 데이터)
+// 계좌 목록 (하드코딩 샘플)
 const accounts = ref([
   {
-    id: 1,
-    bankCode: 'KB',
-    bankName: 'KB국민은행',
-    accountNumber: '123-456789-01-234',
+    accountId: 1,
+    accountNumber: '004-123456-78-901',
     accountName: '김영희',
     accountType: '입출금통장',
+    bankCode: '004',
     balance: 2450000,
-    change: 50000,
-    lastTransaction: '2024.01.15',
-    status: 'active',
-    isPrimary: true,
-    transactions: [
-      {
-        type: 'income',
-        amount: 2500000,
-        date: '2024.01.01',
-        description: '급여',
-      },
-      {
-        type: 'expense',
-        amount: -150000,
-        date: '2024.01.05',
-        description: '카드결제',
-      },
-      {
-        type: 'expense',
-        amount: -200000,
-        date: '2024.01.10',
-        description: '이체',
-      },
-      {
-        type: 'income',
-        amount: 50000,
-        date: '2024.01.12',
-        description: '이자',
-      },
-    ],
   },
   {
-    id: 2,
-    bankCode: 'KB',
-    bankName: 'KB국민은행',
-    accountNumber: '987-654321-02-345',
+    accountId: 2,
+    accountNumber: '004-987654-32-100',
     accountName: '김영희',
-    accountType: '적금통장',
+    accountType: '자유적금',
+    bankCode: '004',
     balance: 1200000,
-    change: 100000,
-    lastTransaction: '2024.01.14',
-    status: 'active',
-    isPrimary: false,
-    transactions: [
-      {
-        type: 'income',
-        amount: 100000,
-        date: '2024.01.01',
-        description: '적금 납입',
-      },
-      {
-        type: 'income',
-        amount: 100000,
-        date: '2024.01.14',
-        description: '적금 납입',
-      },
-      {
-        type: 'expense',
-        amount: -50000,
-        date: '2024.01.20',
-        description: '적금 해지 수수료',
-      },
-    ],
   },
   {
-    id: 3,
-    bankCode: 'SHINHAN',
-    bankName: '신한은행',
-    accountNumber: '110-123-456789',
+    accountId: 3,
+    accountNumber: '088-110-222-333',
     accountName: '김영희',
     accountType: '입출금통장',
+    bankCode: '088',
     balance: 850000,
-    change: -25000,
-    lastTransaction: '2024.01.13',
-    status: 'active',
-    isPrimary: false,
-    transactions: [
-      {
-        type: 'expense',
-        amount: -100000,
-        date: '2024.01.08',
-        description: 'ATM출금',
-      },
-      {
-        type: 'expense',
-        amount: -75000,
-        date: '2024.01.13',
-        description: '카드결제',
-      },
-      {
-        type: 'expense',
-        amount: -120000,
-        date: '2024.01.18',
-        description: '온라인 쇼핑',
-      },
-      {
-        type: 'income',
-        amount: 30000,
-        date: '2024.01.22',
-        description: '적립금',
-      },
-    ],
   },
-]);
+])
 
-// 월별 수입/지출 데이터 (실제 거래 데이터에서 계산)
-const monthlyIncome = computed(() => {
-  return accounts.value.reduce((total, account) => {
-    return (
-      total +
-      account.transactions
-        .filter((transaction) => transaction.type === 'income')
-        .reduce((sum, transaction) => sum + transaction.amount, 0)
-    );
-  }, 0);
-});
-
-const monthlyExpense = computed(() => {
-  return Math.abs(
-    accounts.value.reduce((total, account) => {
-      return (
-        total +
-        account.transactions
-          .filter((transaction) => transaction.type === 'expense')
-          .reduce((sum, transaction) => sum + transaction.amount, 0)
-      );
-    }, 0)
-  );
-});
+// 월별 수입/지출 데이터 (예시: 거래 데이터가 없으면 0 처리)
+const monthlyIncome = computed(() => 0)
+const monthlyExpense = computed(() => 0)
 
 // 계산된 속성
 const totalAssets = computed(() => {
-  return accounts.value.reduce((sum, account) => sum + account.balance, 0);
-});
+  return accounts.value.reduce((sum, account) => sum + (account.balance || 0), 0)
+})
+
+
 
 const netIncome = computed(() => {
-  return monthlyIncome.value - monthlyExpense.value;
-});
+  return monthlyIncome.value - monthlyExpense.value
+})
 
 // 그래프 높이 계산 함수
 const getIncomeBarHeight = () => {
-  const maxValue = Math.max(monthlyIncome.value, monthlyExpense.value);
-  if (maxValue === 0) return 0;
-  const percentage = (monthlyIncome.value / maxValue) * 100;
-  return Math.max(percentage, 10); // 최소 10% 높이 보장
-};
+  const maxValue = Math.max(monthlyIncome.value, monthlyExpense.value)
+  if (maxValue === 0) return 0
+  const percentage = (monthlyIncome.value / maxValue) * 100
+  return Math.max(percentage, 10) // 최소 10% 높이 보장
+}
 
 const getExpenseBarHeight = () => {
-  const maxValue = Math.max(monthlyIncome.value, monthlyExpense.value);
-  if (maxValue === 0) return 0;
-  const percentage = (monthlyExpense.value / maxValue) * 100;
-  return Math.max(percentage, 10); // 최소 10% 높이 보장
-};
+  const maxValue = Math.max(monthlyIncome.value, monthlyExpense.value)
+  if (maxValue === 0) return 0
+  const percentage = (monthlyExpense.value / maxValue) * 100
+  return Math.max(percentage, 10) // 최소 10% 높이 보장
+}
 
 // 메서드
 const goBack = () => {
-  router.push('/');
-};
+  router.push('/')
+}
 
 const toggleAssetVisibility = () => {
-  showAssets.value = !showAssets.value;
-};
+  showAssets.value = !showAssets.value
+}
+
+
+
 
 const getStatusText = (status) => {
   const statusTexts = {
-    active: '정상',
-    suspended: '정지',
-    closed: '해지',
-  };
-  return statusTexts[status] || '알 수 없음';
-};
+    'active': '정상',
+    'suspended': '정지',
+    'closed': '해지'
+  }
+  return statusTexts[status] || '알 수 없음'
+}
 
 const viewTransactions = (account) => {
   router.push({
     path: '/inquiry',
-    query: { accountId: account.id },
-  });
-};
+    query: { accountId: account.accountId }
+  })
+}
 
 const transfer = (account) => {
   router.push({
-    path: '/transfer',
-    query: { fromAccount: account.id },
-  });
-};
+    path: '/accountTransfer',
+    query: { accountId: account.accountId }
+  })
+}
 
 const changeMonth = (direction) => {
   // 월 변경 로직 (실제로는 날짜 계산)
-  const months = [
-    '1월',
-    '2월',
-    '3월',
-    '4월',
-    '5월',
-    '6월',
-    '7월',
-    '8월',
-    '9월',
-    '10월',
-    '11월',
-    '12월',
-  ];
+  const months = ['1월', '2월', '3월', '4월', '5월', '6월', 
+                  '7월', '8월', '9월', '10월', '11월', '12월']
   // 간단한 예시
-  alert(`${direction > 0 ? '다음' : '이전'} 달로 이동합니다.`);
-};
+  alert(`${direction > 0 ? '다음' : '이전'} 달로 이동합니다.`)
+}
 
 const goToTransfer = () => {
-  router.push('/transfer');
-};
+  router.push('/transfer')
+}
 
 const goToInquiry = () => {
-  router.push('/inquiry');
-};
+  router.push('/inquiry')
+}
 
 const goToPractice = () => {
-  router.push('/practice');
-};
+  router.push('/practice')
+}
 
 const requestHelp = () => {
-  router.push('/');
-};
+  router.push('/')
+}
 
 const formatNumber = (num) => {
-  return new Intl.NumberFormat('ko-KR').format(num);
-};
+  return new Intl.NumberFormat('ko-KR').format(num)
+}
 
 // 차트 생성 함수
 const createChart = () => {
-  const ctx = document.getElementById('incomeExpenseChart');
-  if (!ctx) return;
+  const ctx = document.getElementById('incomeExpenseChart')
+  if (!ctx) return
 
   // 기존 차트가 있다면 제거
   if (chartInstance.value) {
-    chartInstance.value.destroy();
+    chartInstance.value.destroy()
   }
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: ['수입', '지출'],
-      datasets: [
-        {
-          label: '금액 (원)',
-          data: [monthlyIncome.value, monthlyExpense.value],
-          backgroundColor: [
-            'rgba(34, 197, 94, 0.8)', // 수입 - 녹색
-            'rgba(239, 68, 68, 0.8)', // 지출 - 빨간색
-          ],
-          borderColor: ['rgba(34, 197, 94, 1)', 'rgba(239, 68, 68, 1)'],
-          borderWidth: 2,
-          borderRadius: 8,
-          borderSkipped: false,
-        },
-      ],
+      datasets: [{
+        label: '금액 (원)',
+        data: [monthlyIncome.value, monthlyExpense.value],
+        backgroundColor: [
+          'rgba(34, 197, 94, 0.8)', // 수입 - 녹색
+          'rgba(239, 68, 68, 0.8)'  // 지출 - 빨간색
+        ],
+        borderColor: [
+          'rgba(34, 197, 94, 1)',
+          'rgba(239, 68, 68, 1)'
+        ],
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false,
+          display: false
         },
         tooltip: {
           callbacks: {
-            label: function (context) {
-              return `${context.label}: ₩${formatNumber(context.parsed.y)}`;
-            },
-          },
-        },
+            label: function(context) {
+              return `${context.label}: ₩${formatNumber(context.parsed.y)}`
+            }
+          }
+        }
       },
       scales: {
         y: {
           beginAtZero: true,
           ticks: {
-            callback: function (value) {
-              return '₩' + formatNumber(value);
+            callback: function(value) {
+              return '₩' + formatNumber(value)
             },
             font: {
-              size: 12,
-            },
+              size: 12
+            }
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.1)',
-          },
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
         },
         x: {
           ticks: {
             font: {
               size: 14,
-              weight: 'bold',
-            },
+              weight: 'bold'
+            }
           },
           grid: {
-            display: false,
-          },
-        },
+            display: false
+          }
+        }
       },
       animation: {
         duration: 1000,
-        easing: 'easeInOutQuart',
-      },
-    },
-  });
-};
+        easing: 'easeInOutQuart'
+      }
+    }
+  })
+}
 
-// 컴포넌트 마운트 시 차트 생성
+// 컴포넌트 마운트 시 차트 생성 (하드코딩 데이터)
 onMounted(() => {
   nextTick(() => {
-    createChart();
-  });
-});
+    createChart()
+  })
+})
 
 // 수입/지출 데이터 변경 시 차트 업데이트
 watch([monthlyIncome, monthlyExpense], () => {
   if (chartInstance.value) {
-    chartInstance.value.data.datasets[0].data = [
-      monthlyIncome.value,
-      monthlyExpense.value,
-    ];
-    chartInstance.value.update();
+    chartInstance.value.data.datasets[0].data = [monthlyIncome.value, monthlyExpense.value]
+    chartInstance.value.update()
   }
-});
+})
 </script>
 
 <style scoped>
 /* CSS 변수 정의 - KB국민은행 공식 브랜드 컬러 */
 .account-overview-page {
   /* KB Main Colors */
-  --kb-yellow-positive: #ffbc00; /* KB Yellow Positive - R255 G188 B0 */
-  --kb-yellow-negative: #ffcc00; /* KB Yellow Negative - R255 G204 B0 */
-  --kb-gray: #605850; /* KB Gray - R96 G88 B76 */
-
+  --kb-yellow-positive: #FFBC00;  /* KB Yellow Positive - R255 G188 B0 */
+  --kb-yellow-negative: #FFCC00;  /* KB Yellow Negative - R255 G204 B0 */
+  --kb-gray: #605850;             /* KB Gray - R96 G88 B76 */
+  
   /* KB Sub Colors */
-  --kb-dark-gray: #545049; /* KB Dark Gray - R84 G80 B69 */
-  --kb-gold: #b8860b; /* KB Gold (추정) */
-  --kb-silver: #c0c0c0; /* KB Silver (추정) */
-
+  --kb-dark-gray: #545049;        /* KB Dark Gray - R84 G80 B69 */
+  --kb-gold: #B8860B;             /* KB Gold (추정) */
+  --kb-silver: #C0C0C0;           /* KB Silver (추정) */
+  
   /* Derived Colors */
   --primary: var(--kb-yellow-positive);
-  --primary-light: #fff4d6;
-  --primary-dark: #e6a600;
+  --primary-light: #FFF4D6;
+  --primary-dark: #E6A600;
   --secondary: var(--kb-yellow-negative);
-  --secondary-light: #fff8e1;
+  --secondary-light: #FFF8E1;
   --accent: var(--kb-gray);
-  --accent-light: #f5f4f2;
-  --success: #4caf50;
+  --accent-light: #F5F4F2;
+  --success: #4CAF50;
   --warning: var(--kb-yellow-negative);
-  --danger: #f44336;
-
+  --danger: #F44336;
+  
   /* Gray Scale */
-  --gray-50: #fafafa;
-  --gray-100: #f5f5f5;
-  --gray-200: #eeeeee;
-  --gray-300: #e0e0e0;
-  --gray-400: #bdbdbd;
-  --gray-500: #9e9e9e;
+  --gray-50: #FAFAFA;
+  --gray-100: #F5F5F5;
+  --gray-200: #EEEEEE;
+  --gray-300: #E0E0E0;
+  --gray-400: #BDBDBD;
+  --gray-500: #9E9E9E;
   --gray-600: #757575;
   --gray-700: #616161;
   --gray-800: #424242;
   --gray-900: #212121;
-
-  --white: #ffffff;
+  
+  --white: #FFFFFF;
   --black: #000000;
-
+  
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
   /* Border Radius */
   --radius-sm: 6px;
   --radius: 8px;
@@ -553,8 +396,7 @@ watch([monthlyIncome, monthlyExpense], () => {
 .account-overview-page {
   min-height: 100vh;
   background: var(--gray-50);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--gray-800);
   line-height: 1.6;
 }
@@ -607,11 +449,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--kb-yellow-positive) 0%,
-    var(--primary-dark) 100%
-  );
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 16px;
@@ -651,8 +489,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-weight: 600;
   color: var(--kb-gray);
   letter-spacing: -0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .help-btn {
@@ -668,8 +505,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -762,8 +598,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 40px;
   font-weight: 700;
   color: var(--gray-800);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .hidden-balance {
@@ -771,8 +606,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-weight: 700;
   color: var(--gray-600);
   letter-spacing: 6px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .balance-note {
@@ -812,6 +646,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   color: var(--gray-800);
   margin: 0;
 }
+
 
 .account-category {
   display: flex;
@@ -879,8 +714,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 16px;
   font-weight: 700;
   color: var(--gray-800);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.3px;
 }
 
@@ -910,8 +744,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 24px;
   font-weight: 700;
   color: var(--kb-yellow-positive);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.3px;
 }
 
@@ -920,9 +753,10 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-weight: 700;
   color: var(--gray-600);
   letter-spacing: 4px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
+
+
 
 /* 수입/지출 그래프 */
 .income-expense-chart {
@@ -945,16 +779,14 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-weight: 600;
   color: var(--gray-800);
   margin-bottom: 4px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.2px;
 }
 
 .chart-period {
   font-size: 12px;
   color: var(--gray-500);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .chart-container {
@@ -969,6 +801,8 @@ watch([monthlyIncome, monthlyExpense], () => {
   height: 200px;
   width: 100%;
 }
+
+
 
 .chart-summary {
   border-top: 1px solid var(--gray-200);
@@ -985,16 +819,14 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 14px;
   font-weight: 500;
   color: var(--gray-600);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
 .summary-value {
   font-size: 18px;
   font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.2px;
   padding: 6px 12px;
   border-radius: 8px;
@@ -1008,13 +840,13 @@ watch([monthlyIncome, monthlyExpense], () => {
 }
 
 .summary-value.negative {
-  color: #dc2626;
+  color: #DC2626;
   background: rgba(220, 38, 38, 0.1);
   border: 1px solid rgba(220, 38, 38, 0.2);
 }
 
 .summary-value.neutral {
-  color: #6b7280;
+  color: #6B7280;
   background: rgba(107, 114, 128, 0.1);
   border: 1px solid rgba(107, 114, 128, 0.2);
 }
@@ -1037,8 +869,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-weight: 600;
   color: var(--kb-gray);
   letter-spacing: -0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .account-count {
@@ -1048,8 +879,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   background: var(--primary-light);
   padding: 8px 16px;
   border-radius: 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1067,6 +897,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 12px;
 }
+
 
 .account-card {
   background: var(--white);
@@ -1087,6 +918,8 @@ watch([monthlyIncome, monthlyExpense], () => {
   transform: translateY(-1px);
 }
 
+
+
 .card-content {
   display: flex;
   justify-content: space-between;
@@ -1104,8 +937,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-weight: 800;
   color: var(--gray-900);
   margin-bottom: 8px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: 1px;
 }
 
@@ -1147,8 +979,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 20px;
   font-weight: 700;
   color: var(--gray-800);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .hidden-amount {
@@ -1156,8 +987,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-weight: 700;
   color: var(--gray-600);
   letter-spacing: 3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .card-actions {
@@ -1199,8 +1029,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 16px;
   font-weight: 600;
   color: var(--gray-800);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.2px;
 }
 
@@ -1208,8 +1037,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 14px;
   color: var(--gray-600);
   font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1232,8 +1060,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
   flex: 1;
   min-height: 44px;
@@ -1244,6 +1071,8 @@ watch([monthlyIncome, monthlyExpense], () => {
   border-color: var(--gray-400);
 }
 
+
+
 .account-details {
   display: flex;
   flex-direction: column;
@@ -1253,8 +1082,7 @@ watch([monthlyIncome, monthlyExpense], () => {
 .account-number {
   font-size: 13px;
   color: var(--gray-600);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
@@ -1263,8 +1091,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 12px;
   color: var(--gray-500);
   font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
 }
 
@@ -1294,8 +1121,7 @@ watch([monthlyIncome, monthlyExpense], () => {
   font-size: 20px;
   font-weight: 700;
   color: var(--kb-yellow-positive);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.3px;
 }
 
@@ -1500,62 +1326,62 @@ watch([monthlyIncome, monthlyExpense], () => {
   .main-content {
     padding: 12px;
   }
-
+  
   .summary-section {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-
+  
   .asset-breakdown {
     flex-direction: column;
     gap: 12px;
   }
-
+  
   .account-list {
     grid-template-columns: 1fr;
   }
-
+  
   .account-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-
+  
   .account-actions {
     width: 100%;
     flex-direction: row;
     justify-content: space-between;
     gap: 8px;
   }
-
+  
   .chart-wrapper {
     height: 150px;
   }
-
+  
   .balance-section {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-
+  
   .account-footer {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-
+  
   .summary-grid {
     grid-template-columns: 1fr;
   }
-
+  
   .action-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
+  
   .amount {
     font-size: 36px;
   }
-
+  
   .hidden-amount {
     font-size: 36px;
   }
@@ -1565,47 +1391,21 @@ watch([monthlyIncome, monthlyExpense], () => {
   .action-grid {
     grid-template-columns: 1fr;
   }
+  
 
+  
   .chart-wrapper {
     height: 120px;
   }
-
+  
   .chart-header h3 {
     font-size: 14px;
   }
-
+  
   .chart-period {
     font-size: 11px;
   }
 }
-
-.practice-notice {
-  margin: 0px 0 30px 0;
-  background: #fff4d6;
-  border-radius: 12px;
-  padding: 12px;
-  border-left: 4px solid var(--kb-yellow-positive);
-}
-
-.notice-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.notice-icon {
-  font-size: 32px;
-}
-
-.notice-content h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--gray-800);
-  margin-bottom: 4px;
-}
-
-.notice-content p {
-  font-size: 14px;
-  color: var(--gray-600);
-}
 </style>
+
+

@@ -340,13 +340,14 @@ const practiceSteps = {
 };
 
 function startPractice(type) {
-  currentPractice.value = { title: `${type} 연습`, type };
-  currentStep.value = 1;
-  totalSteps.value = practiceSteps[type].length;
-  practiceProgress.value = 0;
-  isPracticing.value = true;
-  quizActive.value = true;
-  practiceCompleted.value = false;
+  // 메인으로 이동해 어떤 버튼을 눌러야 하는지 가이드 표시 후, 해당 버튼 클릭 시 실전연습 페이지로 이동
+  const guideMap = {
+    transfer: 'transfer',
+    inquiry: 'inquiry',
+    balance: 'balance',
+  }
+  const guide = guideMap[type] || 'inquiry'
+  router.push({ path: '/', query: { practiceGuide: guide } })
 }
 
 function nextStep() {
@@ -369,14 +370,8 @@ function selectOption(option) {
 }
 
 function completePractice() {
-  isPracticing.value = false;
-  quizActive.value = false;
-  practiceCompleted.value = true;
-
-  router.push({
-    name: 'realPracticePage',
-    params: { type: currentPractice.value.type },
-  });
+  // 사용되지 않음: 실전연습으로 즉시 이동
+  router.push({ name: 'realPractice', params: { type: currentPractice.value.type } });
 }
 
 function goBack() {
