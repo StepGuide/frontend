@@ -252,13 +252,17 @@
                 </span>
               </div>
             </div>
-            <button
-                class="action-btn"
-                @click="goToInquiry"
-                v-tts:SERVICE_GUIDE.focus="'ACCOUNT_INFO'"
-              >
-                조회
-              </button>
+            <div class="practice-guide-wrapper">
+              <button
+                  class="action-btn"
+                  :class="{ 'practice-guide-highlight': showInquiryPracticeGuide }"
+                  @click="goToInquiry"
+                  v-tts:SERVICE_GUIDE.focus="'ACCOUNT_INFO'"
+                >
+                  조회
+                </button>
+              <div v-if="showInquiryPracticeGuide" class="practice-guide-bubble">이 버튼을 눌러 ‘조회 연습’을 시작하세요</div>
+            </div>
           </div>
         </div>
       </div>
@@ -277,9 +281,12 @@
             <div class="service-icon">💳</div>
             <h3>이체하기</h3>
             <p>안전하고 간편한 계좌이체</p>
-            <button class="service-btn primary" @click="goToTransfer">
-              이용하기
-            </button>
+            <div class="practice-guide-wrapper">
+              <button class="service-btn primary" :class="{ 'practice-guide-highlight': showTransferPracticeGuide }" @click="goToTransfer">
+                이용하기
+              </button>
+              <div v-if="showTransferPracticeGuide" class="practice-guide-bubble">이 버튼을 눌러 ‘이체 연습’을 시작하세요</div>
+            </div>
           </div>
 
           <div
@@ -343,7 +350,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, inject } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { createHelpRequest } from '@/api/index';
 import { getBankInfo, extractBankCode } from '@/utils/bankMapping';
@@ -363,6 +370,7 @@ const me = ref(null);
 const showGuardianModal = ref(false);
 
 const router = useRouter();
+const route = useRoute();
 const isLoading = ref(false);
 const isCopying = ref(false);
 const errorMessage = ref('');
@@ -591,7 +599,17 @@ const secondaryBankInfo = computed(() => getBankInfo('004'))
 
 // 라우팅
 const toggleToGuardianMode = () => router.push('/guardian');
+
+// 연습 가이드 플래그 (메인에서 말풍선/하이라이트 표시)
+const showInquiryPracticeGuide = ref(false)
+const showTransferPracticeGuide = ref(false)
+const showBalancePracticeGuide = ref(false)
+
 const goToTransfer = () => {
+  if (showTransferPracticeGuide.value) {
+    router.push('/practice/real/transfer')
+    return
+  }
   console.log('[MainPage] goToTransfer clicked, primaryAccount:', primaryAccount.value)
   if (primaryAccount.value?.accountId) {
     router.push({ path: '/accountTransfer', query: { accountId: primaryAccount.value.accountId } })
@@ -601,6 +619,10 @@ const goToTransfer = () => {
   }
 }
 const goToInquiry = () => {
+  if (showInquiryPracticeGuide.value) {
+    router.push('/practice/real/inquiry')
+    return
+  }
   console.log('[MainPage] goToInquiry clicked, primaryAccount:', primaryAccount.value)
   if (primaryAccount.value?.accountId) {
     router.push({ path: '/inquiry', query: { accountId: primaryAccount.value.accountId } })
@@ -609,8 +631,14 @@ const goToInquiry = () => {
     router.push('/inquiry')
   }
 }
-const goToAccountOverview = () => router.push('/account-overview');
-const goToPractice = () => router.push('/practice/PracticeMainPage');
+const goToAccountOverview = () => {
+  if (showBalancePracticeGuide.value) {
+    router.push('/practice/real/balance')
+    return
+  }
+  router.push('/account-overview');
+}
+const goToPractice = () => router.push('/practice/PracticeSelectPage');
 const goToAccountFavorites = () => router.push('/account-favorites');
 const goToEducation = () => router.push('/education');
 
@@ -896,6 +924,21 @@ const onServiceCardHover = (serviceType) => {
 // ---------- 마운트 시: WebRTC 초기화 대기 & 시그널링 설정 ----------
 onMounted(() => {
   console.log('🚀 MainPage 마운트됨')
+  // 연습 가이드 진입 여부 (예: /?practiceGuide=inquiry|transfer)
+  const guide = route.query.practiceGuide
+  if (guide === 'inquiry') {
+    showInquiryPracticeGuide.value = true
+    showTransferPracticeGuide.value = false
+    showBalancePracticeGuide.value = false
+  } else if (guide === 'transfer') {
+    showInquiryPracticeGuide.value = false
+    showTransferPracticeGuide.value = true
+    showBalancePracticeGuide.value = false
+  } else if (guide === 'balance') {
+    showInquiryPracticeGuide.value = false
+    showTransferPracticeGuide.value = false
+    showBalancePracticeGuide.value = true
+  }
   
   // 지능적인 초기 상태 설정
   console.log('🔄 현재 상태 확인:', {
@@ -2129,6 +2172,47 @@ async function kakaoHardLogout() {
   font-size: 14px;
   font-weight: 600;
   color: var(--kb-gray);
+}
+
+/* 연습 가이드 말풍선/하이라이트 */
+.practice-guide-wrapper {
+  position: relative;
+}
+.practice-guide-bubble {
+  position: absolute;
+  top: -14px;
+  right: -6px;
+  background: #fffef2;
+  color: #605850;
+  border: 1px solid var(--kb-yellow-positive);
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+  z-index: 2;
+}
+.practice-guide-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 14px;
+  width: 10px;
+  height: 10px;
+  background: #fffef2;
+  border-left: 1px solid var(--kb-yellow-positive);
+  border-bottom: 1px solid var(--kb-yellow-positive);
+  transform: rotate(45deg);
+}
+.practice-guide-highlight {
+  animation: guidePulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(255, 188, 0, 0.5);
+}
+@keyframes guidePulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 188, 0, 0.45); }
+  70% { box-shadow: 0 0 0 12px rgba(255, 188, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 188, 0, 0); }
 }
 
 /* 반응형 디자인 */

@@ -5,7 +5,9 @@
     <!-- 문제별 UI를 동적으로 표시 -->
     <component :is="currentComponent"></component>
 
-    <button @click="completeRealPractice">실전 연습 완료</button>
+    <div class="practice-footer">
+      <button class="btn-primary" @click="completeRealPractice">실전 연습 완료</button>
+    </div>
   </div>
 </template>
 
@@ -17,7 +19,6 @@ import { useRoute, useRouter } from 'vue-router';
 import TransferPractice from './real/TransferPractice.vue';
 import InquiryPractice from './real/InquiryPractice.vue';
 import BalancePractice from './real/BalancePractice.vue';
-import SecurityPractice from './real/SecurityPractice.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -32,8 +33,8 @@ const currentComponent = computed(() => {
       return InquiryPractice;
     case 'balance':
       return BalancePractice;
-    case 'security':
-      return SecurityPractice;
+    default:
+      return TransferPractice;
   }
 });
 
@@ -45,13 +46,12 @@ const practiceTitle = computed(() => {
       return '조회';
     case 'balance':
       return '잔액 확인';
-    case 'security':
-      return '보안 설정';
+    default:
+      return '이체';
   }
 });
 
 function completeRealPractice() {
-  alert(`${practiceTitle.value} 실전 연습 완료!`);
-  router.push('/practice/PracticeSelectPage'); // 완료 후 돌아갈 페이지
+  router.push({ name: 'realPracticeComplete', query: { title: practiceTitle.value } });
 }
 </script>

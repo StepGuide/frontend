@@ -108,7 +108,6 @@
           <h2>거래내역</h2>
           <div class="results-summary">
             <span>총 {{ transactions.length }}건</span>
-            <span>잔액: ₩ {{ formatNumber(selectedAccount?.balance || 0) }}</span>
           </div>
         </div>
 
@@ -172,7 +171,6 @@ const periods = [
   { label: '이번주', value: 'week' },
   { label: '이번달', value: 'month' },
   { label: '1년', value: 'year' },
-  { label: '기간설정', value: 'custom' },
 ];
 
 // 오늘 날짜
@@ -293,7 +291,7 @@ const handleIndividualTypeChange = () => {
 // 유틸
 const formatNumber = (num) => new Intl.NumberFormat('ko-KR').format(num);
 const formatDate = (d) => new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-const getTransactionTypeName = (type) => ({ income: '입금', expense: '출금', transfer: '이체' }[type] || '기타');
+const getTransactionTypeName = (type) => ({ income: '입금', expense: '출금'}[type] || '기타');
 
 // 뒤로가기
 const goBack = () => router.push('/');
