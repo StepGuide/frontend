@@ -6,6 +6,7 @@ import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
 import { checkFraudAccount } from '@/api/fraudAccountApi';
 import { favorites, getFavorites } from '@/api/favoritesApi';
 import { useAuthStore } from '@/stores/auth';
+import api from '@/api/axios';
 
 const router = useRouter();
 const store = useTransferStore();
@@ -99,6 +100,7 @@ const confirmTransfer = async () => {
     // }
     // 사기 계좌이거나 점수가 50점 이상이면 지연 이체
     if (isFraudHighRisk.value || anomalyLevel.value === 'high') {
+      sendGuardianAlert();
       transferDTO.value.transferType = 'DELAYED';
     } else {
       transferDTO.value.transferType = 'IMMEDIATE';
@@ -341,6 +343,20 @@ onMounted(() => {
     console.warn('로그인 정보 없음. 계좌/즐겨찾기 조회 불가')
   }
 })
+async function sendGuardianAlert() {
+  try {
+    const { data } = await api.post('/push/alert-guardian', {});
+    alert(`전송 성공: ${typeof data === 'string' ? data : 'OK'}`);
+  } catch (e) {
+    const status = e?.response?.status;
+    const msg = e?.response?.data || e?.message || 'unknown';
+    alert(
+      `전송 실패: ${status ?? ''} ${
+        typeof msg === 'string' ? msg : JSON.stringify(msg)
+      }`
+    );
+  }
+}
 </script>
 
 <template>
