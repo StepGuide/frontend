@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useTransferStore } from '@/stores/accountTransferStore';
 import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
 import { checkFraudAccount } from '@/api/fraudAccountApi';
@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useBankStore } from '@/stores/bank';
 
 const router = useRouter();
+const route = useRoute();
 const store = useTransferStore();
 const authStore = useAuthStore();
 const bankStore = useBankStore();
@@ -340,16 +341,31 @@ const formatDate = (dateStr) => {
   });
 };
 
-onMounted(() => {
+onMounted(async () => {
   // const userId = 1 // 로그인 유저 ID
   // store.fetchAccounts(userId)
   // getFavorites()
   const userId = authStore.currentUserId; // authStore에서 동적 userId 가져오기
   if (userId) {
-    store.fetchAccounts(userId);
+    await store.fetchAccounts(userId);
     getFavorites(userId);
   } else {
     console.warn('로그인 정보 없음. 계좌/즐겨찾기 조회 불가');
+  }
+
+  // 쿼리로 넘어온 accountId가 있으면 자동 선택 및 2단계로 이동
+  const qAccountId = route.query.accountId;
+  if (qAccountId && accounts.value?.length) {
+    const target = accounts.value.find(
+      (a) => String(a.accountId) === String(qAccountId)
+    );
+    if (target) {
+      await selectAccount(target);
+      // 바로 이체 정보 입력으로 이동
+      if (currentStep.value === 1) {
+        store.nextStep();
+      }
+    }
   }
 });
 </script>

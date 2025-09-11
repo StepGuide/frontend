@@ -150,10 +150,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { getBankImage, getBankName } from '@/utils/bankMapping';
 import { useAuthStore } from '@/stores/auth';
 const router = useRouter();
+const route = useRoute();
 
 // 상태
 const auth = useAuthStore();
@@ -179,7 +180,7 @@ const today = computed(() => new Date().toISOString().split('T')[0]);
 
 // 선택 계좌
 const selectedAccount = computed(() =>
-  accounts.value.find(a => a.id == selectedAccountId.value)
+  accounts.value.find(a => (a.id ?? a.accountId) == selectedAccountId.value)
 );
 
 // 초기 계좌 조회
@@ -193,7 +194,18 @@ onMounted(async () => {
     const res = await axios.get(`/api/transfer/accounts/${auth.userId}`);
      // 예시: userId = 1
     accounts.value = res.data;
-    if (accounts.value.length) selectedAccountId.value = accounts.value[0].id;
+    // 쿼리 파라미터 우선
+    const qAccountId = route.query.accountId;
+    if (qAccountId) {
+      const target = accounts.value.find(a => String(a.id || a.accountId) === String(qAccountId));
+      if (target) {
+        selectedAccountId.value = target.id || target.accountId;
+      }
+    }
+    // 기본 선택 보정
+    if (!selectedAccountId.value && accounts.value.length) {
+      selectedAccountId.value = accounts.value[0].id || accounts.value[0].accountId;
+    }
   } catch (err) {
     console.log(auth.userId);
     console.error(err);
