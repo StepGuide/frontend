@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const store = useTransferStore();
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 
 // 거래내역
 // const transactions = ref([])
@@ -333,14 +333,14 @@ onMounted(() => {
   // const userId = 1 // 로그인 유저 ID
   // store.fetchAccounts(userId)
   // getFavorites()
-    const userId = authStore.currentUserId  // authStore에서 동적 userId 가져오기
+  const userId = authStore.currentUserId; // authStore에서 동적 userId 가져오기
   if (userId) {
-    store.fetchAccounts(userId)
-    getFavorites(userId)
+    store.fetchAccounts(userId);
+    getFavorites(userId);
   } else {
-    console.warn('로그인 정보 없음. 계좌/즐겨찾기 조회 불가')
+    console.warn('로그인 정보 없음. 계좌/즐겨찾기 조회 불가');
   }
-})
+});
 </script>
 
 <template>
@@ -610,7 +610,12 @@ onMounted(() => {
           :class="{ danger: isFraudHighRisk }"
         >
           <span class="fraud-icon">⚠️</span>
-          <span class="fraud-text">{{ fraudCheckMessage }}</span>
+          <div class="fraud-content">
+            <span class="fraud-text">{{ fraudCheckMessage }}</span>
+            <p class="fraud-notice">
+              이체를 누르면 지연이체가 되고 보호자에게게 알림이 갑니다.
+            </p>
+          </div>
         </div>
 
         <!-- 이상징후 점수 표시 -->
@@ -655,11 +660,8 @@ onMounted(() => {
             </ul>
           </div>
           <div v-else-if="anomalyLevel === 'high'" class="anomaly-note high">
-            <p>
-              거래의 여러 요소에서 위험 신호가 감지되어 자동으로 지연
-              처리됩니다.
-            </p>
-            <p>또한, 보호자/관리자에게 알림이 발송됩니다.</p>
+            <p>거래의 여러 요소에서 위험 신호가 감지되었습니다.</p>
+            <p>이체를 누르면 지연이체가 되고 보호자에게게 알림이 갑니다.</p>
           </div>
           <div class="anomaly-toggle">
             <button
@@ -1708,8 +1710,8 @@ onMounted(() => {
 /* 사기 민원 경고 박스 */
 .fraud-warning {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
   padding: 12px 14px;
   border-radius: 8px;
   border: 1px solid var(--gray-300);
@@ -1725,9 +1727,28 @@ onMounted(() => {
 }
 .fraud-icon {
   font-size: 16px;
+  margin-top: 2px;
+}
+.fraud-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .fraud-text {
   font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+.fraud-notice {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.4;
+  opacity: 0.9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 /* 이상탐지 제목 섹션 */
