@@ -557,8 +557,8 @@ const generateHelpCode = async () => {
     isLoading.value = true;
     errorMessage.value = '';
 
-    // 사용자 ID (실제로는 인증된 사용자 ID를 사용해야 함)
-    const userId = 'user123'; // 실제 사용자 ID로 변경 필요
+    // 사용자 ID (auth store에서 가져오기)
+    const userId = auth.currentUserId || 'user123'; // 로그인한 사용자 ID 또는 기본값
 
     // 도움 요청 코드 생성 - API에서 6자리 코드 문자열을 직접 반환
     const helpCode = await createHelpRequest(userId);

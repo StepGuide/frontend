@@ -7,7 +7,6 @@
         <div class="logo-container">
           <img src="/images/login/logo.png" alt="KB국민은행" class="logo-image" />
         </div>
-        <h1 class="app-title">KB국민은행</h1>
         <p class="app-subtitle">안전하고 편리한 금융 서비스</p>
       </div>
 
@@ -18,9 +17,9 @@
           <p class="login-description">간편하게 로그인하고 서비스를 이용해보세요</p>
           
           <div class="login-buttons">
-            <button class="kakao-login-btn" @click="goKakao">
+            <div class="kakao-login-btn" @click="goKakao">
               <img src="/images/login/kakao_login_medium_wide.png" alt="카카오로 로그인" class="kakao-login-image" />
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -186,14 +185,15 @@ async function sendGuardianAlert() {
 }
 
 .logo-container {
-  margin-bottom: 24px;
+
   display: flex;
   justify-content: center;
 }
 
 .logo-image {
-  width: 80px;
-  height: 80px;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
   object-fit: contain;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
 }
@@ -247,9 +247,6 @@ async function sendGuardianAlert() {
 }
 
 .kakao-login-btn {
-  background: none;
-  border: none;
-  padding: 0;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -266,44 +263,14 @@ async function sendGuardianAlert() {
   transform: translateZ(0);
 }
 
-.kakao-login-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: var(--radius-lg);
-}
 
-.kakao-login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.kakao-login-btn:hover::before {
-  opacity: 1;
-}
-
-.kakao-login-btn:active {
-  transform: translateY(0);
-}
 
 .kakao-login-image {
   width: 100%;
   height: auto;
   max-width: 300px;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  transition: all 0.2s ease;
   display: block;
-}
-
-.kakao-login-btn:hover .kakao-login-image {
-  box-shadow: var(--shadow-lg);
 }
 
 /* 개발자 도구 */
@@ -385,8 +352,9 @@ async function sendGuardianAlert() {
   }
   
   .logo-image {
-    width: 64px;
-    height: 64px;
+    width: 100%;
+    max-width: 280px;
+    height: auto;
   }
   
   .app-title {
