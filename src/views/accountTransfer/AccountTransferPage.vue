@@ -2084,6 +2084,9 @@ onMounted(async () => {
   box-shadow: var(--shadow);
   border: 1px solid var(--gray-200);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 380px; /* 최근송금/즐겨찾기 카드 동일 높이 */
 }
 
 /* 탭 네비게이션 */
@@ -2132,7 +2135,25 @@ onMounted(async () => {
 /* 탭 콘텐츠 */
 .tab-content {
   padding: 16px;
-  min-height: 200px;
+  min-height: 0;
+  flex: 1;           /* 탭 콘텐츠가 남은 영역을 채움 */
+  overflow-y: auto;  /* 목록 스크롤 */
+}
+
+/* 스크롤바 스타일 (선택) */
+.tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+.tab-content::-webkit-scrollbar-track {
+  background: var(--gray-200);
+  border-radius: 3px;
+}
+.tab-content::-webkit-scrollbar-thumb {
+  background: var(--kb-yellow-positive);
+  border-radius: 3px;
+}
+.tab-content::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
 }
 
 /* 빈 상태 */
