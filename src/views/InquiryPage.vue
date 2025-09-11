@@ -152,10 +152,11 @@ import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { getBankImage, getBankName } from '@/utils/bankMapping';
-
+import { useAuthStore } from '@/stores/auth';
 const router = useRouter();
 
 // 상태
+const auth = useAuthStore();
 const accounts = ref([]);
 const selectedAccountId = ref('');
 const selectedPeriod = ref('week');
@@ -183,11 +184,18 @@ const selectedAccount = computed(() =>
 
 // 초기 계좌 조회
 onMounted(async () => {
+ if (!auth.userId) {
+    console.log('userId가 아직 없음');
+    return; // userId 없으면 조회하지 않음
+  }
+
   try {
-    const res = await axios.get(`/api/transfer/accounts/1`); // 예시: userId = 1
+    const res = await axios.get(`/api/transfer/accounts/${auth.userId}`);
+     // 예시: userId = 1
     accounts.value = res.data;
     if (accounts.value.length) selectedAccountId.value = accounts.value[0].id;
   } catch (err) {
+    console.log(auth.userId);
     console.error(err);
   }
 });
