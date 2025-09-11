@@ -6,10 +6,12 @@ import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
 import { checkFraudAccount } from '@/api/fraudAccountApi';
 import { favorites, getFavorites } from '@/api/favoritesApi';
 import { useAuthStore } from '@/stores/auth';
+import { useBankStore } from '@/stores/bank';
 
 const router = useRouter();
 const store = useTransferStore();
 const authStore = useAuthStore();
+const bankStore = useBankStore();
 
 // 거래내역
 // const transactions = ref([])
@@ -172,6 +174,12 @@ const getBankName = (code) => {
   return bank ? bank.name : code;
 };
 
+// 은행코드로 은행 이미지 가져오기
+const getBankImage = (code) => {
+  const bank = bankStore.banks.find((b) => b.code === code);
+  return bank ? bank.logo : '/images/bank/kbbank.png'; // 기본값으로 KB은행 이미지
+};
+
 // <이상계좌 탐지>
 // 이상징후 점수 상태 및 표시 계산값
 const anomalyScore = ref(null);
@@ -319,6 +327,9 @@ const fillFavoriteInfo = (favorite) => {
   transferDTO.value.accountHolderName = favorite.sendBankNickname || '';
 };
 
+// 탭 상태 관리
+const activeTab = ref('recent'); // 'recent' 또는 'favorites'
+
 // 날짜 포맷팅
 const formatDate = (dateStr) => {
   const date = new Date(dateStr);
@@ -404,10 +415,13 @@ onMounted(() => {
             :class="{ selected: selectedAccount?.accountId === acc.accountId }"
             @click="selectAccount(acc)"
           >
+            <div class="bank-image">
+              <img :src="getBankImage(acc.bankCode)" :alt="getBankName(acc.bankCode)" />
+            </div>
             <div class="account-info">
               <div class="bank-name">{{ acc.accountName }}</div>
               <div class="account-number">{{ acc.accountNumber }}</div>
-              <div class="account-name">이름</div>
+              <!-- <div class="account-name">이름</div> -->
             </div>
             <div class="balance">
               <div class="balance-amount">
@@ -445,36 +459,80 @@ onMounted(() => {
           <p>받는 분의 계좌 정보를 입력해주세요</p>
         </div>
 
-        <!-- 최근 거래내역 -->
-        <div class="recent-transfers">
-          <h3>최근 거래내역</h3>
-          <div v-if="transactions.length === 0">최근 거래내역이 없습니다.</div>
-          <div
-            v-for="t in transactions.slice(0, 5)"
-            :key="t.transactionId"
-            class="transfer-item"
-            @click="fillTransferInfo(t)"
-          >
-            <span>{{ getBankName(t.sendBankCode) }}</span>
-            <span>{{ t.payeeAccountNumber }}</span>
-            <span>{{ t.accountHolderName }}</span>
-            <span>₩ {{ formatNumber(t.transactionAmount) }}</span>
-            <span>{{ formatDate(t.createdTime) }}</span>
+        <!-- 탭 네비게이션 -->
+        <div class="tab-container">
+          <div class="tab-navigation">
+            <button 
+              class="tab-button" 
+              :class="{ active: activeTab === 'recent' }"
+              @click="activeTab = 'recent'"
+            >
+              최근송금
+            </button>
+            <button 
+              class="tab-button" 
+              :class="{ active: activeTab === 'favorites' }"
+              @click="activeTab = 'favorites'"
+            >
+              즐겨찾기
+            </button>
           </div>
-        </div>
 
-        <!-- 즐겨찾기 계좌 -->
-        <div class="favorite-transfers" v-if="favorites.length">
-          <h3>즐겨찾기 계좌</h3>
-          <div
-            v-for="f in favorites"
-            :key="f.favoriteId"
-            class="transfer-item"
-            @click="fillFavoriteInfo(f)"
-          >
-            <span>{{ getBankName(f.sendBankCode) }}</span>
-            <span>{{ f.sendAccountNumber }}</span>
-            <span>{{ f.sendBankNickname }}</span>
+          <!-- 최근 거래내역 탭 -->
+          <div v-if="activeTab === 'recent'" class="tab-content">
+            <div v-if="transactions.length === 0" class="empty-state">
+              최근 거래내역이 없습니다.
+            </div>
+            <div
+              v-for="t in transactions.slice(0, 5)"
+              :key="t.transactionId"
+              class="transfer-item"
+              @click="fillTransferInfo(t)"
+            >
+              <div class="bank-image">
+                <img :src="getBankImage(t.sendBankCode)" :alt="getBankName(t.sendBankCode)" />
+              </div>
+              <div class="transfer-info">
+                <div class="transfer-main">
+                  <span class="bank-name">{{ getBankName(t.sendBankCode) }}</span>
+                  <span class="account-number">{{ t.payeeAccountNumber }}</span>
+                </div>
+                <div class="transfer-details">
+                  <span class="account-holder">{{ t.accountHolderName }}</span>
+                  <span class="transfer-date">{{ formatDate(t.createdTime) }}</span>
+                </div>
+              </div>
+              <div class="transfer-amount">
+                ₩ {{ formatNumber(t.transactionAmount) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 즐겨찾기 계좌 탭 -->
+          <div v-if="activeTab === 'favorites'" class="tab-content">
+            <div v-if="favorites.length === 0" class="empty-state">
+              즐겨찾기 계좌가 없습니다.
+            </div>
+            <div
+              v-for="f in favorites"
+              :key="f.favoriteId"
+              class="transfer-item"
+              @click="fillFavoriteInfo(f)"
+            >
+              <div class="bank-image">
+                <img :src="getBankImage(f.sendBankCode)" :alt="getBankName(f.sendBankCode)" />
+              </div>
+              <div class="transfer-info">
+                <div class="transfer-main">
+                  <span class="bank-name">{{ getBankName(f.sendBankCode) }}</span>
+                  <span class="account-number">{{ f.sendAccountNumber }}</span>
+                </div>
+                <div class="transfer-details">
+                  <span class="account-holder">{{ f.sendBankNickname }}</span>
+                </div>
+              </div>
+              <div class="star-icon">★</div>
+            </div>
           </div>
         </div>
 
@@ -1148,6 +1206,25 @@ onMounted(() => {
 .account-item.selected .select-indicator {
   background: var(--kb-yellow-positive);
   color: var(--white);
+}
+
+.bank-image {
+  width: 40px;
+  height: 40px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+}
+
+.bank-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .account-info {
@@ -1967,22 +2044,189 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-/* 최근거래 내역 관련 */
-.recent-transfers {
-  margin-bottom: 16px;
+/* 탭 컨테이너 */
+.tab-container {
+  margin-bottom: 20px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+  overflow: hidden;
 }
 
+/* 탭 네비게이션 */
+.tab-navigation {
+  display: flex;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
+}
+
+.tab-button:hover {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+.tab-button.active {
+  color: var(--kb-yellow-positive);
+  background: var(--white);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--kb-yellow-positive);
+  border-radius: 2px 2px 0 0;
+}
+
+/* 탭 콘텐츠 */
+.tab-content {
+  padding: 16px;
+  min-height: 200px;
+}
+
+/* 빈 상태 */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--gray-500);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 거래 아이템 */
 .transfer-item {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 8px;
-  border: 1px solid #ddd;
-  margin-bottom: 4px;
+  padding: 16px;
+  border: 1px solid var(--gray-200);
+  margin-bottom: 8px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 8px;
+  background: var(--white);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.transfer-item .bank-image {
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+}
+
+.transfer-item .bank-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .transfer-item:hover {
-  background-color: #f0f0f0;
+  background: var(--primary-light);
+  border-color: var(--kb-yellow-positive);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.transfer-item:last-child {
+  margin-bottom: 0;
+}
+
+.transfer-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.transfer-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bank-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
+}
+
+.account-number {
+  font-size: 13px;
+  color: var(--gray-600);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.transfer-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-holder {
+  font-size: 12px;
+  color: var(--gray-500);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
+}
+
+.transfer-date {
+  font-size: 11px;
+  color: var(--gray-400);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
+}
+
+.transfer-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--kb-yellow-positive);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.2px;
+}
+
+.star-icon {
+  font-size: 20px;
+  color: var(--kb-yellow-positive);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.transfer-item:hover .star-icon {
+  color: var(--primary-dark);
+  transform: scale(1.1);
 }
 </style>
