@@ -11,8 +11,7 @@
         </div>
         <div class="nav-actions">
           <button class="help-btn" @click="requestHelp">
-            <span class="help-icon">❓</span>
-            <span class="help-text">도움</span>
+            ❓ 도움
           </button>
         </div>
       </div>
@@ -25,30 +24,34 @@
         <div class="section-header">
           <h2>조회할 계좌 선택</h2>
         </div>
-        <div class="account-dropdown">
-          <select
-            v-model="selectedAccountId"
-            @change="loadTransactions"
-            class="account-select"
+        <div class="account-list">
+          <div 
+            v-for="account in accounts" 
+            :key="account.accountId" 
+            class="account-item"
+            :class="{ active: selectedAccountId === account.accountId }"
+            @click="selectedAccountId = account.accountId"
           >
-            <option value="">계좌를 선택하세요</option>
-            <option
-              v-for="account in accounts"
-              :key="account.id"
-              :value="account.id"
-            >
-              {{ account.bankName }} - {{ account.accountNumber }} (₩
-              {{ formatNumber(account.balance) }})
-            </option>
-          </select>
+            <img 
+              :src="getBankImage(account.bankCode || '004')" 
+              :alt="getBankName(account.bankCode || '004')"
+              class="bank-logo"
+            />
+            <div class="account-info">
+              <div class="account-name">{{ account.accountName }}</div>
+              <div class="account-number">{{ account.accountNumber }}</div>
+              <div class="bank-name">{{ getBankName(account.bankCode || '004') }}</div>
+            </div>
+            <div class="account-balance">
+              ₩{{ formatNumber(account.balance || 0) }}
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- 조회 조건 -->
-      <div v-if="selectedAccountId" class="inquiry-conditions">
-        <div class="section-header">
-          <h2>조회 조건</h2>
-        </div>
+      <div class="inquiry-conditions">
+        <div class="section-header"><h2>조회 조건</h2></div>
 
         <div class="condition-tabs">
           <button
@@ -62,25 +65,15 @@
           </button>
         </div>
 
-        <div class="custom-period" v-if="selectedPeriod === 'custom'">
+        <div v-if="selectedPeriod === 'custom'" class="custom-period">
           <div class="date-inputs">
             <div class="date-group">
               <label>시작일</label>
-              <input
-                v-model="customStartDate"
-                type="date"
-                class="date-input"
-                :max="today"
-              />
+              <input v-model="customStartDate" type="date" :max="today" />
             </div>
             <div class="date-group">
               <label>종료일</label>
-              <input
-                v-model="customEndDate"
-                type="date"
-                class="date-input"
-                :max="today"
-              />
+              <input v-model="customEndDate" type="date" :max="today" />
             </div>
           </div>
         </div>
@@ -89,149 +82,83 @@
           <label>거래 유형</label>
           <div class="filter-options">
             <label class="filter-option">
-              <input
-                v-model="transactionTypes"
-                type="checkbox"
-                value="all"
-                @change="toggleAllTypes"
-              />
-              <span>전체</span>
+              <input type="checkbox" value="all" v-model="transactionTypes" @change="toggleAllTypes" /> 전체
             </label>
             <label class="filter-option">
-              <input
-                v-model="transactionTypes"
-                type="checkbox"
-                value="income"
-              />
-              <span>입금</span>
+              <input type="checkbox" value="income" v-model="transactionTypes" @change="handleIndividualTypeChange" /> 입금
             </label>
             <label class="filter-option">
-              <input
-                v-model="transactionTypes"
-                type="checkbox"
-                value="expense"
-              />
-              <span>출금</span>
+              <input type="checkbox" value="expense" v-model="transactionTypes" @change="handleIndividualTypeChange" /> 출금
             </label>
             <label class="filter-option">
-              <input
-                v-model="transactionTypes"
-                type="checkbox"
-                value="transfer"
-              />
-              <span>이체</span>
+              <input type="checkbox" value="transfer" v-model="transactionTypes" @change="handleIndividualTypeChange" /> 이체
             </label>
           </div>
         </div>
 
         <div class="search-actions">
           <button class="btn-secondary" @click="resetConditions">초기화</button>
-          <button class="btn-primary" @click="searchTransactions">
-            조회하기
-          </button>
+          <button class="btn-primary" @click="searchTransactions">조회하기</button>
         </div>
       </div>
 
       <!-- 거래내역 결과 -->
-      <div v-if="transactions.length > 0" class="transaction-results">
+      <div class="transaction-results">
         <div class="results-header">
           <h2>거래내역</h2>
           <div class="results-summary">
-            <span class="total-count">총 {{ transactions.length }}건</span>
-            <span class="total-amount">
-              잔액: ₩ {{ formatNumber(selectedAccount?.balance || 0) }}
-            </span>
+            <span>총 {{ transactions.length }}건</span>
+            <span>잔액: ₩ {{ formatNumber(selectedAccount?.balance || 0) }}</span>
           </div>
         </div>
 
-        <div class="transaction-list">
-          <div
-            v-for="transaction in transactions"
-            :key="transaction.id"
-            class="transaction-item"
-          >
-            <div class="transaction-icon">
-              <img
-                v-if="transaction.sendBankCode"
-                :src="getBankLogo(transaction.sendBankCode)"
-                alt="은행 로고"
-                class="bank-logo"
+        <div class="transaction-list-container">
+          <div v-if="transactions.length" class="transaction-list">
+            <div v-for="t in transactions" :key="t.id" class="transaction-item">
+              <img 
+                :src="getBankImage(t.bankCode || selectedAccount?.bankCode || '004')" 
+                :alt="getBankName(t.bankCode || selectedAccount?.bankCode || '004')"
+                class="transaction-bank-logo"
               />
-              <span v-else class="default-icon">🏦</span>
-            </div>
-
-            <div class="transaction-info">
-              <div class="transaction-main">
-                <div class="transaction-type">
-                  {{ getTransactionTypeName(transaction.type) }}
+              <div class="transaction-info">
+                <div class="transaction-type" :class="{ income: t.amount>0, expense: t.amount<0 }">
+                  {{ getTransactionTypeName(t.type) }}
                 </div>
-                <div class="transaction-desc">
-                  {{ transaction.description }}
-                </div>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-date">
-                  {{ formatDate(transaction.date) }}
-                </div>
-                <div class="transaction-time">{{ transaction.time }}</div>
-                <div v-if="transaction.balance" class="transaction-balance">
-                  잔액: ₩ {{ formatNumber(transaction.balance) }}
+                <div class="transaction-desc">{{ t.description }}</div>
+                <div class="transaction-details">
+                  <span>{{ formatDate(t.date) }}</span>
+                  <span>{{ t.time }}</span>
+                  <span v-if="t.balance" class="transaction-balance">잔액: ₩ {{ formatNumber(t.balance) }}</span>
                 </div>
               </div>
-            </div>
-
-            <div class="transaction-amount">
-              <div
-                class="amount"
-                :class="{
-                  income: transaction.amount > 0,
-                  expense: transaction.amount < 0,
-                }"
-              >
-                {{ transaction.amount > 0 ? '+' : '' }}₩
-                {{ formatNumber(Math.abs(transaction.amount)) }}
+              <div class="transaction-amount" :class="{ income: t.amount>0, expense: t.amount<0 }">
+                {{ t.amount > 0 ? '+' : '' }}₩{{ formatNumber(Math.abs(t.amount)) }}
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="load-more">
-          <button class="btn-secondary" @click="loadMoreTransactions">
-            더보기
-          </button>
+          <div v-else class="no-transactions">
+            <div class="no-transactions-icon">📋</div>
+            <p>조회된 거래내역이 없습니다</p>
+          </div>
         </div>
       </div>
 
-      <!-- 조회 결과 없음 -->
-      <div v-else-if="selectedAccountId && hasSearched" class="no-results">
-        <div class="no-results-icon">📋</div>
-        <h3>조회된 거래내역이 없습니다</h3>
-        <p>선택한 조건에 해당하는 거래내역이 없습니다.</p>
-        <button class="btn-primary" @click="resetConditions">
-          조건 다시 설정
-        </button>
-      </div>
-
-      <!-- 계좌 미선택 안내 -->
-      <div v-else-if="!selectedAccountId" class="select-account-prompt">
-        <div class="prompt-icon">🏦</div>
-        <h3>계좌를 선택해주세요</h3>
-        <p>조회할 계좌를 선택하면 거래내역을 확인할 수 있습니다.</p>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
-import { useBankStore } from '@/stores/bank';
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-
+import { useRouter, useRoute } from 'vue-router';
+import { getBankImage, getBankName } from '@/utils/bankMapping';
+import { useAuthStore } from '@/stores/auth';
 const router = useRouter();
-const bankStore = useBankStore();
+const route = useRoute();
 
-// 반응형 데이터
+// 상태
+const auth = useAuthStore();
+const accounts = ref([]);
 const selectedAccountId = ref('');
 const selectedPeriod = ref('week');
 const customStartDate = ref('');
@@ -240,118 +167,90 @@ const transactionTypes = ref(['all']);
 const transactions = ref([]);
 const hasSearched = ref(false);
 
-const getBankLogo = (bankCode) => {
-  const bank = bankStore.banks.find((b) => b.code === bankCode);
-  console.log(bank.logo);
-  return bank ? bank.logo : '';
-};
+// 예시: 조회할 기간 탭
+const periods = [
+  { label: '이번주', value: 'week' },
+  { label: '이번달', value: 'month' },
+  { label: '1년', value: 'year' },
+  { label: '기간설정', value: 'custom' },
+];
 
 // 오늘 날짜
 const today = computed(() => new Date().toISOString().split('T')[0]);
 
-// 계좌 목록 (샘플 데이터 유지)
-const accounts = ref([
-  {
-    id: 1,
-    bankName: 'KB국민은행',
-    accountNumber: '123-456789-01-234',
-    accountName: '김영희',
-    balance: 2450000,
-  },
-  {
-    id: 2,
-    bankName: 'KB국민은행',
-    accountNumber: '987-654321-02-345',
-    accountName: '김영희',
-    balance: 1200000,
-  },
-]);
-
-// 조회 기간 옵션
-const periods = ref([
-  { label: '최근 1주', value: 'week' },
-  { label: '최근 1개월', value: 'month' },
-  { label: '최근 3개월', value: 'quarter' },
-  { label: '직접 선택', value: 'custom' },
-]);
-
-// 선택된 계좌
+// 선택 계좌
 const selectedAccount = computed(() =>
-  accounts.value.find((account) => account.id == selectedAccountId.value)
+  accounts.value.find(a => (a.id ?? a.accountId) == selectedAccountId.value)
 );
 
-// 뒤로가기
-const goBack = () => router.push('/');
-
-// 기간 선택
-const selectPeriod = (period) => {
-  selectedPeriod.value = period;
-  if (period !== 'custom') {
-    customStartDate.value = '';
-    customEndDate.value = '';
+// 초기 계좌 조회
+onMounted(async () => {
+ if (!auth.userId) {
+    console.log('userId가 아직 없음');
+    return; // userId 없으면 조회하지 않음
   }
-};
-
-// 전체/개별 거래 유형 토글
-const toggleAllTypes = () => {
-  if (transactionTypes.value.includes('all')) {
-    transactionTypes.value = ['all'];
-  } else {
-    transactionTypes.value = [];
-  }
-};
-
-// 계좌 선택 시 초기화
-const loadTransactions = () => {
-  hasSearched.value = false;
-  transactions.value = [];
-};
-
-// 거래내역 조회
-const searchTransactions = async () => {
-  if (!selectedAccountId.value) return;
 
   try {
-    const response = await axios.get(
-      `/api/transfer/transactions/${selectedAccountId.value}`
-    );
+    const res = await axios.get(`/api/transfer/accounts/${auth.userId}`);
+     // 예시: userId = 1
+    accounts.value = res.data;
+    // 쿼리 파라미터 우선
+    const qAccountId = route.query.accountId;
+    if (qAccountId) {
+      const target = accounts.value.find(a => String(a.id || a.accountId) === String(qAccountId));
+      if (target) {
+        selectedAccountId.value = target.id || target.accountId;
+      }
+    }
+    // 기본 선택 보정
+    if (!selectedAccountId.value && accounts.value.length) {
+      selectedAccountId.value = accounts.value[0].id || accounts.value[0].accountId;
+    }
+  } catch (err) {
+    console.log(auth.userId);
+    console.error(err);
+  }
+});
 
-    // API 데이터 변환
-    let result = response.data.map((t) => ({
-      id: t.id,
-      type:
-        t.depositWithdrawal === 'DEPOSIT'
-          ? 'income'
-          : t.depositWithdrawal === 'TRANSFER'
-          ? 'transfer'
-          : 'expense',
+// 거래내역 조회
+const fetchTransactions = async (accountId) => {
+  if (!accountId) return;
+  try {
+    const res = await axios.get(`/api/transfer/transactions/${accountId}`);
+    transactions.value = res.data.map(t => ({
+      id: t.transactionId,
+      type: t.depositWithdrawal === 'DEPOSIT' ? 'income'
+           : t.depositWithdrawal === 'TRANSFER' ? 'transfer'
+           : 'expense',
       description: t.memo,
-      amount:
-        t.depositWithdrawal === 'DEPOSIT'
-          ? t.transactionAmount
-          : -t.transactionAmount,
-      date: t.createdTime.split('T')[0],
-      time: t.createdTime.split('T')[1] || '',
-      balance: t.balance || selectedAccount.value?.balance || null,
-      sendBankCode: t.sendBankCode,
+      amount: t.depositWithdrawal === 'DEPOSIT' ? t.transactionAmount : -t.transactionAmount,
+      date: t.createdTime?.split('T')[0] || '',
+      time: t.createdTime?.split('T')[1] || '',
+      balance: selectedAccount.value?.balance || null,
+      bankCode: t.bankCode || selectedAccount.value?.bankCode || '004',
     }));
 
-    // 거래 유형 필터링
     if (!transactionTypes.value.includes('all')) {
-      result = result.filter((t) => transactionTypes.value.includes(t.type));
+      transactions.value = transactions.value.filter(t => transactionTypes.value.includes(t.type));
     }
 
-    transactions.value = result;
     hasSearched.value = true;
-  } catch (error) {
-    alert('거래내역을 불러오는 데 실패했습니다.');
+  } catch (err) {
+    console.error(err);
+    transactions.value = [];
+    hasSearched.value = true;
   }
 };
 
-// 더보기 (백엔드 연동 필요 시 수정)
-const loadMoreTransactions = () => alert('더 많은 거래내역을 불러옵니다.');
+// 선택 계좌 변경 시 자동 조회
+watch(selectedAccountId, (id) => {
+  if (id) fetchTransactions(id);
+});
 
-// 조건 초기화
+// 조회 버튼
+const searchTransactions = () => fetchTransactions(selectedAccountId.value);
+
+// 초기화
 const resetConditions = () => {
   selectedPeriod.value = 'week';
   customStartDate.value = '';
@@ -361,30 +260,45 @@ const resetConditions = () => {
   hasSearched.value = false;
 };
 
+// 기간 선택
+const selectPeriod = (p) => {
+  selectedPeriod.value = p;
+  if (p !== 'custom') {
+    customStartDate.value = '';
+    customEndDate.value = '';
+  }
+};
+
+// 전체/개별 거래 유형 토글
+const toggleAllTypes = () => {
+  if (transactionTypes.value.includes('all')) {
+    // 전체가 체크되어 있으면 모든 개별 옵션을 체크
+    transactionTypes.value = ['income', 'expense', 'transfer'];
+  } else {
+    // 개별 옵션이 모두 체크되어 있으면 전체를 체크
+    const hasAllIndividual = ['income', 'expense', 'transfer'].every(type => 
+      transactionTypes.value.includes(type)
+    );
+    transactionTypes.value = hasAllIndividual ? ['all'] : transactionTypes.value;
+  }
+};
+
+// 개별 거래 유형 선택 시 전체 체크 해제
+const handleIndividualTypeChange = () => {
+  if (transactionTypes.value.includes('all')) {
+    transactionTypes.value = transactionTypes.value.filter(type => type !== 'all');
+  }
+};
+
 // 유틸
 const formatNumber = (num) => new Intl.NumberFormat('ko-KR').format(num);
-const formatDate = (dateString) =>
-  new Date(dateString).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+const formatDate = (d) => new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+const getTransactionTypeName = (type) => ({ income: '입금', expense: '출금', transfer: '이체' }[type] || '기타');
 
-const getTransactionIcon = (type) =>
-  ({
-    income: 'income-icon',
-    expense: 'expense-icon',
-    transfer: 'transfer-icon',
-  }[type] || 'default-icon');
-const getTransactionEmoji = (type) =>
-  ({ income: '💰', expense: '💸', transfer: '🔄' }[type] || '📄');
-const getTransactionTypeName = (type) =>
-  ({ income: '입금', expense: '출금', transfer: '이체' }[type] || '기타');
-
-// 도움말
+// 뒤로가기
+const goBack = () => router.push('/');
 const requestHelp = () => router.push('/');
 </script>
-
 <style scoped>
 /* CSS 변수 정의 - KB국민은행 공식 브랜드 컬러 */
 .inquiry-page {
@@ -605,73 +519,194 @@ const requestHelp = () => router.push('/');
 /* 계좌 선택 */
 .account-selector {
   background: var(--white);
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: var(--shadow);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
   border: 1px solid var(--gray-200);
+  margin-bottom: 24px;
 }
 
-.account-select {
-  width: 100%;
-  padding: 12px;
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.account-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--gray-50);
   border: 2px solid var(--gray-200);
-  border-radius: 8px;
-  font-size: 14px;
-  background: var(--white);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.account-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 12px;
+}
+
+.account-item:hover {
+  background: var(--white);
+  border-color: var(--kb-yellow-positive);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.account-item:hover::before {
+  opacity: 0.05;
+}
+
+.account-item.active {
+  background: var(--white);
+  border-color: var(--kb-yellow-positive);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.account-item.active::before {
+  opacity: 0.1;
+}
+
+.bank-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: var(--white);
+  padding: 4px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.account-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.account-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-800);
+  letter-spacing: -0.2px;
+}
+
+.account-number {
+  font-size: 14px;
+  color: var(--gray-600);
+  font-weight: 500;
+  font-family: 'Courier New', monospace;
+}
+
+.bank-name {
+  font-size: 12px;
+  color: var(--gray-500);
+  font-weight: 600;
+  background: var(--gray-100);
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.account-balance {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--kb-yellow-positive);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     'Helvetica Neue', Arial, sans-serif;
-  font-weight: 500;
-  letter-spacing: -0.1px;
-}
-
-.account-select:focus {
-  outline: none;
-  border-color: var(--kb-yellow-positive);
-  box-shadow: 0 0 0 3px rgba(255, 188, 0, 0.1);
+  letter-spacing: -0.3px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 조회 조건 */
 .inquiry-conditions {
   background: var(--white);
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: var(--shadow);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
   border: 1px solid var(--gray-200);
+  margin-bottom: 24px;
 }
 
 .condition-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .period-tab {
-  padding: 12px 20px;
+  padding: 14px 24px;
   border: 2px solid var(--gray-200);
-  border-radius: 20px;
+  border-radius: 24px;
   background: var(--white);
   color: var(--gray-600);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     'Helvetica Neue', Arial, sans-serif;
   letter-spacing: -0.1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.period-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 24px;
 }
 
 .period-tab:hover {
   border-color: var(--kb-yellow-positive);
   color: var(--kb-yellow-positive);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.period-tab:hover::before {
+  opacity: 0.1;
 }
 
 .period-tab.active {
   background: var(--kb-yellow-positive);
   border-color: var(--kb-yellow-positive);
   color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.period-tab.active::before {
+  opacity: 0;
 }
 
 .custom-period {
@@ -713,37 +748,77 @@ const requestHelp = () => router.push('/');
 }
 
 .transaction-type-filter {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .transaction-type-filter label {
   display: block;
   font-size: 16px;
   font-weight: 700;
-  color: var(--kb-text-primary);
-  margin-bottom: 12px;
+  color: var(--gray-800);
+  margin-bottom: 16px;
+  letter-spacing: -0.2px;
 }
 
 .filter-options {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
 .filter-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  color: var(--kb-text-secondary);
+  color: var(--gray-700);
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: var(--gray-50);
+  border: 2px solid var(--gray-200);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 20px;
+}
+
+.filter-option:hover {
+  background: var(--white);
+  border-color: var(--kb-yellow-positive);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.filter-option:hover::before {
+  opacity: 0.05;
 }
 
 .filter-option input[type='checkbox'] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--kb-orange);
+  width: 20px;
+  height: 20px;
+  accent-color: var(--kb-yellow-positive);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.filter-option input[type='checkbox']:checked + span {
+  color: var(--kb-yellow-positive);
+  font-weight: 700;
 }
 
 .search-actions {
@@ -755,19 +830,20 @@ const requestHelp = () => router.push('/');
 /* 거래내역 결과 */
 .transaction-results {
   background: var(--white);
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: var(--shadow);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
   border: 1px solid var(--gray-200);
+  margin-bottom: 24px;
 }
 
 .results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--kb-border);
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--gray-200);
 }
 
 .results-header h2 {
@@ -801,11 +877,59 @@ const requestHelp = () => router.push('/');
   letter-spacing: -0.3px;
 }
 
+/* 거래내역 컨테이너 */
+.transaction-list-container {
+  max-height: 500px;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: var(--gray-50);
+  padding: 8px;
+}
+
+.transaction-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.transaction-list-container::-webkit-scrollbar-track {
+  background: var(--gray-200);
+  border-radius: 3px;
+}
+
+.transaction-list-container::-webkit-scrollbar-thumb {
+  background: var(--kb-yellow-positive);
+  border-radius: 3px;
+}
+
+.transaction-list-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
 /* 거래내역 목록 */
 .transaction-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.no-transactions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.no-transactions-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.no-transactions p {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .transaction-item {
@@ -816,14 +940,36 @@ const requestHelp = () => router.push('/');
   background: var(--white);
   border-radius: 12px;
   border: 1px solid var(--gray-200);
-  box-shadow: var(--shadow);
-  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  min-height: 80px;
+  flex-shrink: 0;
+}
+
+.transaction-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, var(--primary-dark) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 16px;
 }
 
 .transaction-item:hover {
   background: var(--gray-50);
+  border-color: var(--kb-yellow-positive);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+
+.transaction-item:hover::before {
+  opacity: 0.03;
 }
 
 /* .transaction-icon {
@@ -844,49 +990,87 @@ const requestHelp = () => router.push('/');
   object-fit: contain; /* 비율 유지 */
 }
 
+.transaction-bank-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: var(--white);
+  padding: 4px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
 .transaction-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
 }
 
 .transaction-main {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .transaction-type {
   font-size: 16px;
   font-weight: 700;
-  color: var(--kb-text-primary);
+  color: var(--gray-800);
+  letter-spacing: -0.2px;
+}
+
+.transaction-type.income {
+  color: #2563eb; /* 파란색 - 입금 */
+}
+
+.transaction-type.expense {
+  color: #dc2626; /* 빨간색 - 출금 */
 }
 
 .transaction-desc {
   font-size: 14px;
-  color: var(--kb-text-secondary);
+  color: var(--gray-600);
   font-weight: 600;
+  line-height: 1.4;
 }
 
 .transaction-details {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   font-size: 12px;
-  color: var(--kb-text-light);
+  color: var(--gray-500);
   font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.transaction-details span {
+  background: var(--gray-100);
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
 }
 
 .transaction-balance {
-  color: var(--kb-text-secondary);
+  color: var(--gray-600);
+  background: var(--kb-yellow-positive) !important;
+  color: var(--white) !important;
+  font-weight: 700;
 }
 
 .transaction-amount {
   text-align: right;
+  position: relative;
+  z-index: 1;
 }
 
 .amount {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     'Helvetica Neue', Arial, sans-serif;
@@ -894,11 +1078,11 @@ const requestHelp = () => router.push('/');
 }
 
 .amount.income {
-  color: var(--success);
+  color: #2563eb; /* 파란색 - 입금 */
 }
 
 .amount.expense {
-  color: var(--danger);
+  color: #dc2626; /* 빨간색 - 출금 */
 }
 
 .load-more {
@@ -1011,51 +1195,100 @@ const requestHelp = () => router.push('/');
     padding: 16px;
   }
 
+  .account-selector,
+  .inquiry-conditions,
+  .transaction-results {
+    padding: 16px;
+  }
+
   .condition-tabs {
     flex-direction: column;
+    gap: 8px;
   }
 
   .period-tab {
     text-align: center;
+    padding: 12px 20px;
   }
 
   .date-inputs {
     flex-direction: column;
+    gap: 12px;
   }
 
   .filter-options {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+  }
+
+  .filter-option {
+    justify-content: center;
+    padding: 12px 20px;
   }
 
   .results-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 16px;
   }
 
   .results-summary {
     align-items: flex-start;
   }
 
+  .account-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .account-info {
+    width: 100%;
+  }
+
+  .account-balance {
+    align-self: flex-end;
+    font-size: 16px;
+  }
+
+  .transaction-list-container {
+    max-height: 400px;
+  }
+
   .transaction-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    padding: 16px;
+    min-height: 100px;
+  }
+
+  .transaction-bank-logo {
+    align-self: flex-start;
   }
 
   .transaction-amount {
     text-align: left;
     width: 100%;
+    align-self: flex-end;
+  }
+
+  .transaction-details {
+    flex-direction: column;
+    gap: 8px;
   }
 
   .search-actions {
     flex-direction: column;
+    gap: 12px;
   }
 
   .btn-primary,
   .btn-secondary {
     width: 100%;
+    padding: 16px 24px;
+    font-size: 16px;
   }
 }
 </style>
