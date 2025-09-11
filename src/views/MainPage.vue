@@ -3,7 +3,7 @@
     <!-- 상단 네비게이션 -->
     <nav class="navbar">
       <div class="nav-content">
-        <div class="logo">
+        <div class="logo" v-tts:MAIN_INTRO.hover="'SERVICE_OVERVIEW'">
           <span class="logo-text">KB 금융 도우미</span>
         </div>
         <div class="nav-actions">
@@ -15,7 +15,11 @@
         <button v-else class="mode-toggle-btn logout-btn" @click="kakaoHardLogout">
     로그아웃
   </button>
-      <button class="mode-toggle-btn" @click="toggleToGuardianMode">
+  <button
+            class="mode-toggle-btn"
+            @click="toggleToGuardianMode"
+            v-tts:SERVICE_GUIDE.hover="'GUARDIAN_MODE_INFO'"
+          >
             <span class="toggle-text">보호자 모드</span>
           </button>
         </div>
@@ -33,15 +37,19 @@
 
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
+      <h2 v-tts:ONBOARDING.auto="'WELCOME_BACK'">도움이 필요하세요?</h2>
       <!-- 환영 메시지 -->
       <div class="welcome-section">
-        <div class="welcome-content">
+        <div
+          class="welcome-content"
+          v-tts:MAIN_INTRO.auto="'TIME_BASED_WELCOME'"
+        >
           <h1 class="welcome-title">안녕하세요, {{ userName }}님!</h1>
           <p class="welcome-subtitle">
             오늘도 안전하게 금융 서비스를 이용해보세요
           </p>
         </div>
-        <div class="help-request-card">
+        <div class="help-request-card" v-tts:HELP_GUIDE.hover="'GUARDIAN_HELP'">
           <div class="help-content">
             <!-- 헤더 섹션 -->
             <div class="help-header">
@@ -54,7 +62,10 @@
             <!-- 코드가 생성되지 않은 상태 -->
             <div v-if="!helpCode" class="code-generation-section">
               <div class="generation-info">
-                <div class="info-item">
+                <div
+                  class="info-item"
+                  v-tts:SERVICE_GUIDE.hover="'SECURITY_INFO'"
+                >
                   <span class="info-icon">🔐</span>
                   <span class="info-text">보안 연결</span>
                 </div>
@@ -72,6 +83,7 @@
                 class="help-request-btn"
                 @click="generateHelpCode"
                 :disabled="isLoading"
+                v-tts:HELP_GUIDE.focus="'HOW_TO_USE'"
               >
                 <div class="btn-content">
                   <span v-if="isLoading" class="loading-spinner"></span>
@@ -188,14 +200,11 @@
 
       <!-- 계좌 정보 -->
       <div class="account-overview">
-        <div class="section-header">
-          <h2>내 계좌 현황</h2>
-          <button class="view-all-btn" @click="goToAccountOverview">
-            전체보기
-          </button>
-        </div>
         <div class="account-grid">
-          <div class="account-card primary">
+          <div
+            class="account-card primary"
+            v-tts:SERVICE_GUIDE.hover="'ACCOUNT_INFO'"
+          >
             <div class="card-header">
               <img
                 :src="primaryBankInfo.image"
@@ -206,38 +215,50 @@
             </div>
             <div class="balance-info">
               <div class="balance-label">총 잔액</div>
-              <div class="balance-amount">₩ 2,450,000</div>
-              <div class="account-number">{{ accountNumber }}</div>
+              <div class="balance-amount">₩ {{ formatNumber(totalBalance) }}</div>
+              <div class="account-number">{{ primaryAccountNumber }}</div>
             </div>
             <div class="card-actions">
-              <button class="action-btn transfer" @click="goToTransfer">
+              <button
+                class="action-btn transfer"
+                @click="goToTransfer"
+                v-tts:SERVICE_GUIDE.focus="'TRANSFER_INFO'"
+              >
                 이체
               </button>
-              <button class="action-btn" @click="goToInquiry">조회</button>
+              <button class="view-all-btn" @click="goToAccountOverview"
+          v-tts:INTERACTION_GUIDE.hover="'BUTTON_HOVER'">
+            전체보기
+          </button>
             </div>
           </div>
 
           <div class="account-card secondary">
             <div class="card-header">
-              <div class="card-icon">📊</div>
-              <div class="card-title">최근 거래</div>
+               <div class="card-title">최근 거래</div>
             </div>
             <div class="transaction-list">
-              <div class="transaction-item">
+              <div
+                v-for="t in recentTransactions"
+                :key="t.id"
+                class="transaction-item"
+              >
                 <div class="transaction-info">
-                  <span class="transaction-type income">입금</span>
-                  <span class="transaction-desc">월급</span>
+                  <span class="transaction-type" :class="t.amount > 0 ? 'income' : 'expense'">{{ t.amount > 0 ? '입금' : '출금' }}</span>
+                  <span class="transaction-desc">{{ t.description || '거래' }}</span>
                 </div>
-                <span class="transaction-amount income">+₩ 500,000</span>
-              </div>
-              <div class="transaction-item">
-                <div class="transaction-info">
-                  <span class="transaction-type expense">출금</span>
-                  <span class="transaction-desc">ATM</span>
-                </div>
-                <span class="transaction-amount expense">-₩ 50,000</span>
+                <span class="transaction-amount" :class="t.amount > 0 ? 'income' : 'expense'">
+                  {{ t.amount > 0 ? '+' : '-' }}₩ {{ formatNumber(Math.abs(t.amount)) }}
+                </span>
               </div>
             </div>
+            <button
+                class="action-btn"
+                @click="goToInquiry"
+                v-tts:SERVICE_GUIDE.focus="'ACCOUNT_INFO'"
+              >
+                조회
+              </button>
           </div>
         </div>
       </div>
@@ -245,10 +266,14 @@
       <!-- 주요 서비스 -->
       <div class="services-section">
         <div class="section-header">
-          <h2>주요 서비스</h2>
+          <h2 v-tts:MAIN_INTRO.hover="'FEATURES_INTRO'">주요 서비스</h2>
         </div>
         <div class="services-grid">
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('transfer')"
+            v-tts:SERVICE_GUIDE.hover="'TRANSFER_INFO'"
+          >
             <div class="service-icon">💳</div>
             <h3>이체하기</h3>
             <p>안전하고 간편한 계좌이체</p>
@@ -257,21 +282,33 @@
             </button>
           </div>
 
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('practice')"
+            v-tts:SERVICE_GUIDE.hover="'PRACTICE_INFO'"
+          >
             <div class="service-icon">🎯</div>
             <h3>연습 모드</h3>
             <p>실제 계좌에 영향 없이 연습</p>
             <button class="service-btn" @click="goToPractice">연습하기</button>
           </div>
 
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('security')"
+            v-tts:SERVICE_GUIDE.hover="'SECURITY_INFO'"
+          >
             <div class="service-icon">🔒</div>
             <h3>보안설정</h3>
             <p>계좌 보안 관리</p>
             <button class="service-btn">설정하기</button>
           </div>
 
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('favorites')"
+            v-tts:SERVICE_GUIDE.hover="'FAVORITES_INFO'"
+          >
             <div class="service-icon">⭐</div>
             <h3>즐겨찾기</h3>
             <p>계좌 즐겨찾기 관리</p>
@@ -280,7 +317,11 @@
             </button>
           </div>
 
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('education')"
+            v-tts:SERVICE_GUIDE.hover="'EDUCATION_INFO'"
+          >
             <div class="service-icon">📚</div>
             <h3>금융교육</h3>
             <p>안전한 금융 이용법</p>
@@ -290,26 +331,7 @@
       </div>
 
       <!-- 빠른 도움말 -->
-      <div class="quick-help">
-        <div class="help-grid">
-          <div class="help-item">
-            <div class="help-icon">❓</div>
-            <span>이체 방법</span>
-          </div>
-          <div class="help-item">
-            <div class="help-icon">❓</div>
-            <span>보안 설정</span>
-          </div>
-          <div class="help-item">
-            <div class="help-icon">❓</div>
-            <span>계좌 조회</span>
-          </div>
-          <div class="help-item">
-            <div class="help-icon">❓</div>
-            <span>비밀번호 변경</span>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
   <GuardianPhoneModal 
@@ -320,7 +342,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { createHelpRequest } from '@/api/index';
@@ -345,7 +367,9 @@ const isLoading = ref(false);
 const isCopying = ref(false);
 const errorMessage = ref('');
 
-
+const showIntro = ref(true);
+const showHelpTips = ref(false);
+const currentTips = ref([]);
 // 도움 요청 코드 store
 const helpCodeStore = useHelpCodeStore();
 const authStore = useAuthStore();
@@ -381,6 +405,29 @@ const { isSharing, isConnected } = screenShareStore;
 // 보호자 연결 상태
 const isGuardianConnected = computed(() => helpCodeStore.isGuardianConnected)
 
+const tts = inject('tts'); // TTS 주입
+
+const startInteractiveTour = () => {
+  if (tts) {
+    tts.speak('HELP_GUIDE', 'HOW_TO_USE');
+  }
+
+  const tourSteps = [
+    { selector: '.account-card', message: 'ACCOUNT_INFO' },
+    { selector: '.service-card:first-child', message: 'TRANSFER_INFO' },
+    { selector: '.help-request-card', message: 'GUARDIAN_HELP' },
+    { selector: '.service-card:nth-child(2)', message: 'PRACTICE_INFO' },
+  ];
+
+  tourSteps.forEach((step, index) => {
+    setTimeout(() => {
+      highlightElement(step.selector);
+      if (tts) {
+        tts.speak('SERVICE_GUIDE', step.message);
+      }
+    }, index * 4000);
+  });
+};
 // 보호자 메시지 감지
 watch(guardianMessage, (newMessage) => {
   if (newMessage && newMessage.trim()) {
@@ -529,27 +576,46 @@ watch(isWebSocketConnected, (newConnected, oldConnected) => {
 })
 
 // 계좌 정보
-const accountNumber = ref('004-123456-78-90');
-const secondaryAccountNumber = ref('004-987654-32-10');
+// 메인 계좌/총잔액/최근 거래 (API 연동)
+const primaryAccount = ref(null)
+const primaryAccountNumber = computed(() => primaryAccount.value?.accountNumber || '')
+const totalBalance = ref(0)
+const recentTransactions = ref([])
 
 // 은행 정보
 const primaryBankInfo = computed(() => {
-  const bankCode = extractBankCode(accountNumber.value);
+  const bankCode = extractBankCode(primaryAccountNumber.value);
   return getBankInfo(bankCode);
 });
-const secondaryBankInfo = computed(() => {
-  const bankCode = extractBankCode(secondaryAccountNumber.value);
-  return getBankInfo(bankCode);
-});
+const secondaryBankInfo = computed(() => getBankInfo('004'))
 
 // 라우팅
 const toggleToGuardianMode = () => router.push('/guardian');
-const goToTransfer = () => router.push('/accountTransfer');
-const goToInquiry = () => router.push('/inquiry');
+const goToTransfer = () => {
+  console.log('[MainPage] goToTransfer clicked, primaryAccount:', primaryAccount.value)
+  if (primaryAccount.value?.accountId) {
+    router.push({ path: '/accountTransfer', query: { accountId: primaryAccount.value.accountId } })
+  } else {
+    console.warn('[MainPage] primaryAccount.accountId 없음. 일반 이동 처리')
+    router.push('/accountTransfer')
+  }
+}
+const goToInquiry = () => {
+  console.log('[MainPage] goToInquiry clicked, primaryAccount:', primaryAccount.value)
+  if (primaryAccount.value?.accountId) {
+    router.push({ path: '/inquiry', query: { accountId: primaryAccount.value.accountId } })
+  } else {
+    console.warn('[MainPage] primaryAccount.accountId 없음. 일반 이동 처리')
+    router.push('/inquiry')
+  }
+}
 const goToAccountOverview = () => router.push('/account-overview');
 const goToPractice = () => router.push('/practice/PracticeMainPage');
 const goToAccountFavorites = () => router.push('/account-favorites');
 const goToEducation = () => router.push('/education');
+
+// 숫자 포맷터
+const formatNumber = (num) => new Intl.NumberFormat('ko-KR').format(num || 0)
 
 // 도움 요청 코드 생성
 const generateHelpCode = async () => {
@@ -557,25 +623,27 @@ const generateHelpCode = async () => {
     isLoading.value = true;
     errorMessage.value = '';
 
-    // 사용자 ID (실제로는 인증된 사용자 ID를 사용해야 함)
-    const userId = 'user123'; // 실제 사용자 ID로 변경 필요
+    const userId = 'user123';
+    const helpCodeResult = await createHelpRequest(userId);
 
-    // 도움 요청 코드 생성 - API에서 6자리 코드 문자열을 직접 반환
-    const helpCode = await createHelpRequest(userId);
+    // 🎵 코드 생성 시 숫자를 하나씩 읽어주기
+    if (tts) {
+      setTimeout(() => {
+        tts.speakDigits(helpCodeResult, '인증 코드가 생성되었습니다.');
+      }, 500);
+    }
 
-    console.log('생성된 도움 요청 코드:', helpCode);
-    // store에 저장
-    helpCodeStore.setGeneratedCode(helpCode);
+    helpCodeStore.setGeneratedCode(helpCodeResult);
   } catch (error) {
     console.error('도움 요청 생성 실패:', error);
     errorMessage.value = '도움 요청 생성에 실패했습니다. 다시 시도해주세요.';
-
-    // 에러 발생 시 기본 코드 생성
     helpCodeStore.setGeneratedCode('123456');
   } finally {
     isLoading.value = false;
   }
 };
+
+
 
 const generateNewCode = async () => {
   await generateHelpCode();
@@ -636,15 +704,18 @@ const copyCode = async () => {
   try {
     isCopying.value = true;
     await navigator.clipboard.writeText(helpCode.value);
-    // 복사 성공 피드백 (선택사항)
-    console.log('코드가 클립보드에 복사되었습니다:', helpCode.value);
+
+    // 🎵 코드 복사 시 음성 안내
+    if (tts) {
+      tts.speak('SYSTEM', 'CODE_COPIED');
+    }
   } catch (error) {
     console.error('코드 복사 실패:', error);
     errorMessage.value = '코드 복사에 실패했습니다.';
   } finally {
     isCopying.value = false;
   }
-}
+};
 
 // 화면 공유 토글
 const toggleScreenShare = async () => {
@@ -804,6 +875,23 @@ const toggleConnection = () => {
   }
 };
 
+// 서비스 카드 호버 시 상세 설명
+const onServiceCardHover = (serviceType) => {
+  if (tts && tts.isEnabled.value) {
+    const messages = {
+      transfer: 'TRANSFER_INFO',
+      practice: 'PRACTICE_INFO',
+      account: 'ACCOUNT_INFO',
+      education: 'EDUCATION_INFO',
+      security: 'SECURITY_INFO',
+    };
+
+    if (messages[serviceType]) {
+      tts.speak('SERVICE_GUIDE', messages[serviceType]);
+    }
+  }
+};
+
 
 // ---------- 마운트 시: WebRTC 초기화 대기 & 시그널링 설정 ----------
 onMounted(() => {
@@ -932,6 +1020,61 @@ onMounted(async () => {
     } else {
       console.error('💥 예상치 못한 에러:', e);
     }
+  }
+  // 추가: 계좌/거래 조회 (백엔드 오류 대비 안전 가드)
+  try {
+    const userId = authStore.currentUserId
+    console.log('[MainPage] userId:', userId)
+    if (userId) {
+      const { getUserAccounts, getAccountTransactions, getFirstAccountTransfer } = await import('@/api/accountTransferApi')
+
+      // 1) 전체 계좌 먼저 조회해 총잔액 계산 및 기본 후보 선정
+      let accounts = []
+      try {
+        accounts = await getUserAccounts(userId)
+        console.log('[MainPage] getUserAccounts result (len):', accounts?.length, accounts)
+        totalBalance.value = (accounts || []).reduce((sum, a) => sum + (a.balance || 0), 0)
+        console.log('[MainPage] totalBalance:', totalBalance.value)
+        if (!primaryAccount.value && accounts && accounts.length) {
+          primaryAccount.value = accounts[0]
+          console.log('[MainPage] primaryAccount fallback set from accounts[0]:', primaryAccount.value)
+        }
+      } catch (e) {
+        console.error('[MainPage] getUserAccounts failed:', e?.message || e)
+      }
+
+      // 2) 기본 계좌 API가 있으면 우선 적용 (실패해도 화면은 유지)
+      try {
+        const first = await getFirstAccountTransfer(userId)
+        console.log('[MainPage] getFirstAccountTransfer result:', first)
+        if (first && first.accountId) {
+          primaryAccount.value = first
+          console.log('[MainPage] primaryAccount set (from Oneaccounts):', primaryAccount.value)
+        }
+      } catch (e) {
+        console.warn('[MainPage] getFirstAccountTransfer failed (will use fallback):', e?.message || e)
+      }
+
+      // 3) 최근 거래 조회 (primaryAccount가 확정된 경우만)
+      try {
+        if (primaryAccount.value?.accountId) {
+          const tx = await getAccountTransactions(primaryAccount.value.accountId)
+          console.log('[MainPage] recent transactions raw:', tx)
+          recentTransactions.value = (tx || []).slice(0, 5).map((t) => ({
+            id: t.transactionId,
+            amount: (t.depositWithdrawal === 'DEPOSIT' ? 1 : -1) * (t.transactionAmount || 0),
+            description: t.memo || ''
+          }))
+          console.log('[MainPage] recentTransactions mapped:', recentTransactions.value)
+        } else {
+          console.warn('[MainPage] primaryAccount.accountId 없음. 최근 거래 조회 생략')
+        }
+      } catch (e) {
+        console.error('[MainPage] getAccountTransactions failed:', e?.message || e)
+      }
+    }
+  } catch (err) {
+    console.error('메인 계좌/거래 조회 실패(outer):', err?.message || err, err)
   }
 });
 
@@ -1634,8 +1777,8 @@ async function kakaoHardLogout() {
 }
 
 .view-all-btn {
-  background: var(--accent-light);
-  color: var(--kb-gray);
+  background: #605850;
+  color: #ffffff;
   border: 1px solid var(--kb-gray);
   font-size: 16px;
   font-weight: 600;
@@ -2169,5 +2312,19 @@ async function kakaoHardLogout() {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
-
+.card-actions .action-btn,
+.card-actions .view-all-btn {
+  flex: 1;               /* 두 버튼이 동일한 너비를 가지도록 */
+  min-width: 0;          /* flex-grow와 충돌하지 않게 */
+  padding: 12px 20px;    /* 높이와 내부 여백 동일하게 */
+  font-size: 14px;       /* 글자 크기 동일하게 */
+  border-radius: var(--radius-xl); /* 모서리 동일하게 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;              /* 아이콘과 글자 간격 */
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
 </style>
