@@ -421,8 +421,9 @@
 
         <div class="action-buttons">
           <button class="btn-secondary" @click="prevStep">이전</button>
-          <div class="guide-wrapper">
-          <button class="btn-primary" @click="confirmTransfer">이체하기</button>
+          <div class="guide-wrapper guide-anchor">
+            <button class="btn-primary" @click="() => { showBigGuideTransfer = false; confirmTransfer(); }">이체하기</button>
+            <div v-if="showBigGuideTransfer" class="big-guide-bubble">여기를 눌러 연습 이체를 완료하세요</div>
             <div class="guide-bubble">마지막 단계! ‘이체하기’를 눌러 연습 완료</div>
           </div>
         </div>
@@ -540,6 +541,8 @@ const showScoreDetails = ref(false);
 const showScoreModal = ref(false);
 const fraudCheckMessage = ref('');
 const isFraudHighRisk = ref(false);
+// 큰 말풍선(최상위)에 의한 이체 가이드 표시
+const showBigGuideTransfer = ref(true);
 
 const anomalyLevel = computed(() => {
   const score = anomalyScore?.value?.result?.totalScore ?? null;
@@ -1469,6 +1472,23 @@ const calculateAnomaly = async () => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+.guide-anchor { position: relative; }
+.big-guide-bubble {
+  position: fixed;
+  z-index: 6000;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid var(--kb-yellow-positive);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+  border-radius: 16px;
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #605850;
+  pointer-events: none; /* 아래 버튼 클릭 가능 */
 }
 .guide-bubble {
   position: absolute;

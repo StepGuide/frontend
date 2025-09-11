@@ -285,7 +285,7 @@
               <button class="service-btn primary" :class="{ 'practice-guide-highlight': showTransferPracticeGuide }" @click="goToTransfer">
                 이용하기
               </button>
-              <div v-if="showTransferPracticeGuide" class="practice-guide-bubble">이 버튼을 눌러 ‘이체 연습’을 시작하세요</div>
+              
             </div>
           </div>
 
@@ -339,6 +339,23 @@
 
       <!-- 빠른 도움말 -->
 
+    </div>
+    <!-- 연습 가이드 오버레이 (가장 위 레이어, 클릭 통과) -->
+    <div
+      v-if="showInquiryPracticeGuide || showTransferPracticeGuide || showBalancePracticeGuide"
+      class="practice-guide-overlay"
+    >
+      <div class="practice-guide-banner" :class="{ transfer: showTransferPracticeGuide, inquiry: showInquiryPracticeGuide, balance: showBalancePracticeGuide }">
+        <div class="banner-title">
+          {{ showTransferPracticeGuide ? '이체 연습 안내' : showInquiryPracticeGuide ? '조회 연습 안내' : '잔액 확인 연습 안내' }}
+        </div>
+        <div class="banner-text">
+          화면에서 강조된 버튼을 눌러 연습을 시작하세요.
+        </div>
+        <div class="banner-hint">
+          {{ showTransferPracticeGuide ? '이체하기 카드의 “이용하기” 버튼' : showInquiryPracticeGuide ? '최근 거래 카드의 “조회” 버튼' : '계좌 정보의 “전체보기” 버튼' }}
+        </div>
+      </div>
     </div>
   </div>
   <GuardianPhoneModal 
@@ -939,6 +956,20 @@ onMounted(() => {
     showTransferPracticeGuide.value = false
     showBalancePracticeGuide.value = true
   }
+
+  // 강조 대상 자동 스크롤
+  setTimeout(() => {
+    const el = showTransferPracticeGuide.value
+      ? document.querySelector('.service-card .service-btn.primary')
+      : showInquiryPracticeGuide.value
+      ? document.querySelector('.account-card.secondary .action-btn')
+      : showBalancePracticeGuide.value
+      ? document.querySelector('.account-card.primary .view-all-btn')
+      : null
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, 100)
   
   // 지능적인 초기 상태 설정
   console.log('🔄 현재 상태 확인:', {
@@ -2213,6 +2244,45 @@ async function kakaoHardLogout() {
   0% { box-shadow: 0 0 0 0 rgba(255, 188, 0, 0.45); }
   70% { box-shadow: 0 0 0 12px rgba(255, 188, 0, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 188, 0, 0); }
+}
+
+/* 풀스크린 가이드 오버레이 (포인터 이벤트 무시로 아래 UI 클릭 가능) */
+.practice-guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  pointer-events: none; /* 아래 요소 클릭 가능 */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.practice-guide-banner {
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid var(--kb-yellow-positive);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+  border-radius: 16px;
+  padding: 16px 20px;
+  max-width: 780px;
+  width: calc(100% - 24px);
+  text-align: center;
+}
+.practice-guide-banner .banner-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--kb-gray);
+}
+.practice-guide-banner .banner-text {
+  margin-top: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #444;
+}
+.practice-guide-banner .banner-hint {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--kb-yellow-positive);
 }
 
 /* 반응형 디자인 */
