@@ -20,19 +20,6 @@
 
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
-      <div class="practice-notice">
-        <div class="notice-card">
-          <div class="notice-icon">🛡️</div>
-          <div class="notice-content">
-            <h3>안전한 연습 환경</h3>
-            <p>
-              실제 계좌에 영향을 주지 않는 가상 환경에서 금융 서비스를
-              연습해보세요.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <!-- 이체 단계 표시 -->
       <div class="step-indicator">
         <div
@@ -64,6 +51,8 @@
           <p>이체할 계좌를 선택해주세요</p>
         </div>
 
+        <div v-if="!selectedAccount" class="guide-info">계좌를 하나 선택해 주세요</div>
+
         <div class="account-list">
           <div
             v-for="account in accounts"
@@ -93,6 +82,7 @@
 
         <div class="action-buttons">
           <button class="btn-secondary" @click="goBack">취소</button>
+          <div class="guide-wrapper">
           <button
             class="btn-primary"
             :disabled="!selectedAccount"
@@ -100,6 +90,8 @@
           >
             다음
           </button>
+            <div v-if="selectedAccount" class="guide-bubble">계좌 선택 완료! ‘다음’을 눌러 진행하세요</div>
+          </div>
         </div>
       </div>
 
@@ -110,8 +102,85 @@
           <p>받는 분의 계좌 정보를 입력해주세요</p>
         </div>
 
+        <!-- 탭 네비게이션: 최근송금 / 즐겨찾기 -->
+        <div class="tab-container">
+          <div class="tab-navigation">
+            <button 
+              class="tab-button" 
+              :class="{ active: activeTab === 'recent' }"
+              @click="activeTab = 'recent'"
+            >
+              최근송금
+            </button>
+            <button 
+              class="tab-button" 
+              :class="{ active: activeTab === 'favorites' }"
+              @click="activeTab = 'favorites'"
+            >
+              즐겨찾기
+            </button>
+          </div>
+
+          <!-- 최근 거래내역 탭 -->
+          <div v-if="activeTab === 'recent'" class="tab-content">
+            <div v-if="transactions.length === 0" class="empty-state">
+              최근 거래내역이 없습니다.
+            </div>
+            <div
+              v-for="t in transactions.slice(0, 5)"
+              :key="t.transactionId"
+              class="transfer-item"
+              @click="fillTransferFromRecent(t)"
+            >
+              <div class="bank-image">
+                <img :src="getBankImage(t.sendBankCode)" :alt="getBankDisplayName(t.sendBankCode)" />
+              </div>
+              <div class="transfer-info">
+                <div class="transfer-main">
+                  <span class="bank-name">{{ getBankDisplayName(t.sendBankCode) }}</span>
+                  <span class="account-number">{{ t.payeeAccountNumber }}</span>
+                </div>
+                <div class="transfer-details">
+                  <span class="account-holder">{{ t.accountHolderName }}</span>
+                  <span class="transfer-date">{{ formatDate(t.createdTime) }}</span>
+                </div>
+              </div>
+              <div class="transfer-amount">
+                ₩ {{ formatNumber(t.transactionAmount) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 즐겨찾기 계좌 탭 -->
+          <div v-if="activeTab === 'favorites'" class="tab-content">
+            <div v-if="favorites.length === 0" class="empty-state">
+              즐겨찾기 계좌가 없습니다.
+            </div>
+            <div
+              v-for="f in favorites"
+              :key="f.favoriteId"
+              class="transfer-item"
+              @click="fillTransferFromFavorite(f)"
+            >
+              <div class="bank-image">
+                <img :src="getBankImage(f.sendBankCode)" :alt="getBankDisplayName(f.sendBankCode)" />
+              </div>
+              <div class="transfer-info">
+                <div class="transfer-main">
+                  <span class="bank-name">{{ getBankDisplayName(f.sendBankCode) }}</span>
+                  <span class="account-number">{{ f.sendAccountNumber }}</span>
+                </div>
+                <div class="transfer-details">
+                  <span class="account-holder">{{ f.sendBankNickname }}</span>
+                </div>
+              </div>
+              <div class="star-icon">★</div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-section">
-          <div class="form-group">
+          <div class="form-group field-guide">
             <label>받는 은행</label>
             <select v-model="transferInfo.bank" class="form-input">
               <option value="">은행을 선택하세요</option>
@@ -121,9 +190,10 @@
               <option value="HANA">하나은행</option>
               <option value="NH">농협은행</option>
             </select>
+            <div v-if="isBankEmpty" class="guide-bubble inline">먼저 은행을 선택하세요</div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group field-guide">
             <label>받는 계좌번호</label>
             <input
               v-model="transferInfo.accountNumber"
@@ -131,9 +201,10 @@
               placeholder="계좌번호를 입력하세요"
               class="form-input"
             />
+            <div v-if="isAccountNumberEmpty" class="guide-bubble inline">계좌번호를 입력하세요</div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group field-guide">
             <label>받는 분 이름</label>
             <input
               v-model="transferInfo.recipientName"
@@ -141,9 +212,10 @@
               placeholder="받는 분의 이름을 입력하세요"
               class="form-input"
             />
+            <div v-if="isRecipientEmpty" class="guide-bubble inline">받는 분 이름을 입력하세요</div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group field-guide">
             <label>이체 금액</label>
             <div class="amount-input-group">
               <input
@@ -158,6 +230,7 @@
             <div class="amount-display">
               ₩ {{ formatNumber(transferInfo.amount || 0) }}
             </div>
+            <div v-if="isAmountInvalid" class="guide-bubble inline">금액을 입력하세요</div>
           </div>
 
           <div class="form-group">
@@ -173,6 +246,7 @@
 
         <div class="action-buttons">
           <button class="btn-secondary" @click="prevStep">이전</button>
+          <div class="guide-wrapper">
           <button
             class="btn-primary"
             :disabled="!isTransferInfoValid"
@@ -180,6 +254,8 @@
           >
             다음
           </button>
+            <div v-if="isTransferInfoValid" class="guide-bubble">잘했어요! ‘다음’을 눌러 확인으로 이동</div>
+          </div>
         </div>
       </div>
 
@@ -233,9 +309,206 @@
           </div>
         </div>
 
+        <!-- 사기 민원 체크 경고 박스 (3건 이상일 때만 노출) -->
+        <div
+          v-if="isFraudHighRisk"
+          class="fraud-warning"
+          :class="{ danger: isFraudHighRisk }"
+        >
+          <span class="fraud-icon">⚠️</span>
+          <span class="fraud-text">{{ fraudCheckMessage }}</span>
+        </div>
+
+        <!-- 이상징후 점수 표시 -->
+        <div class="anomaly-section" v-if="anomalyScore && !isFraudHighRisk">
+          <div class="anomaly-header">
+            <div class="anomaly-title-section">
+              <h3>이상탐지 결과</h3>
+              <button
+                class="help-icon"
+                @click="showScoreModal = true"
+                title="점수 기준 보기"
+              >
+                <span class="help-text">?</span>
+              </button>
+            </div>
+            <div class="anomaly-badge" :class="anomalyLevel">
+              <span class="badge-text">{{ anomalyLabel }}</span>
+              <span
+                v-if="
+                  anomalyScore?.result?.totalScore !== null &&
+                  anomalyScore?.result?.totalScore !== undefined
+                "
+                class="badge-score"
+              >
+                {{ anomalyScore.result.totalScore }}
+              </span>
+            </div>
+          </div>
+          <!-- 레벨별 상세 안내 메시지 -->
+          <div v-if="anomalyLevel === 'normal'" class="anomaly-note success">
+            거래가 안전하게 확인되었습니다.
+          </div>
+          <div
+            v-else-if="anomalyLevel === 'caution'"
+            class="anomaly-note caution"
+          >
+            <p>
+              거래의 일부 요소가 위험 신호를 보였습니다. 계속 진행하시겠습니까?
+            </p>
+            <ul class="risk-list">
+              <li v-for="risk in riskFactors" :key="risk">{{ risk }}</li>
+            </ul>
+          </div>
+          <div v-else-if="anomalyLevel === 'high'" class="anomaly-note high">
+            <p>
+              거래의 여러 요소에서 위험 신호가 감지되어 자동으로 지연
+              처리됩니다.
+            </p>
+            <p>또한, 보호자/관리자에게 알림이 발송됩니다.</p>
+          </div>
+          <div class="anomaly-toggle">
+            <button
+              class="score-toggle-btn"
+              @click="showScoreDetails = !showScoreDetails"
+            >
+              <span class="chevron">{{ showScoreDetails ? '▾' : '▸' }}</span>
+              <span class="label-text">점수 보기</span>
+            </button>
+          </div>
+          <div
+            class="anomaly-breakdown"
+            v-if="anomalyScore?.result && showScoreDetails"
+          >
+            <div class="breakdown-row">
+              <span class="label">이전 송금 점수</span>
+              <span class="value">{{
+                anomalyScore.result.previousTransferScore
+              }}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">송금액 점수</span>
+              <span class="value">{{
+                anomalyScore.result.largeAmountScore
+              }}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">송금 시각 점수</span>
+              <span class="value">{{
+                anomalyScore.result.nightTimeScore
+              }}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">송금 횟수 점수</span>
+              <span class="value">{{
+                anomalyScore.result.dailyFrequencyScore
+              }}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="label">즐겨찾기 점수</span>
+              <span class="value">{{
+                anomalyScore.result.favoriteAccountScore
+              }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이상징후 로딩 -->
+        <div v-if="isLoadingAnomaly" class="anomaly-loading">
+          <div class="loading-spinner"></div>
+          <span>이상징후 점수 계산 중...</span>
+        </div>
+
         <div class="action-buttons">
           <button class="btn-secondary" @click="prevStep">이전</button>
-          <button class="btn-primary" @click="confirmTransfer">이체하기</button>
+          <div class="guide-wrapper guide-anchor">
+            <button class="btn-primary" @click="() => { showBigGuideTransfer = false; confirmTransfer(); }">이체하기</button>
+            <div v-if="showBigGuideTransfer" class="big-guide-bubble">여기를 눌러 연습 이체를 완료하세요</div>
+            <div class="guide-bubble">마지막 단계! ‘이체하기’를 눌러 연습 완료</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 점수 기준 모달창 -->
+    <div
+      v-if="showScoreModal"
+      class="modal-overlay"
+      @click="showScoreModal = false"
+    >
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>이상탐지 점수 기준</h3>
+          <button class="modal-close" @click="showScoreModal = false">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- 점수 계산 기준 설명 -->
+          <div class="score-explanation">
+            <h4>점수 계산 기준</h4>
+            <p class="explanation-text">
+              거래의 안전성을 확인하기 위해 아래 기준으로 점수가 계산됩니다.<br />
+              점수가 높을수록 위험 가능성이 커집니다. (총점 60점)
+            </p>
+
+            <div class="score-breakdown">
+              <div class="breakdown-item">
+                <span class="breakdown-label">이전 송금 점수 (15점)</span>
+                <span class="breakdown-desc"
+                  >최근 1년 이내에 해당 계좌로 송금한 적이 없으면 점수
+                  부여</span
+                >
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">송금액 점수 (20점)</span>
+                <span class="breakdown-desc"
+                  >1회 송금 금액이 50만 원 이상이거나, 최근 30일 평균 송금액의
+                  2배 이상이면 점수 부여</span
+                >
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">송금 시간 점수 (10점)</span>
+                <span class="breakdown-desc"
+                  >밤 10시부터 새벽 6시 사이에 송금하면 점수 부여</span
+                >
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">송금 횟수 점수 (10점)</span>
+                <span class="breakdown-desc"
+                  >같은 날 2회 이상 송금했을 경우 점수 부여</span
+                >
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">즐겨찾기 점수 (5점)</span>
+                <span class="breakdown-desc"
+                  >해당 계좌가 즐겨찾기에 등록되지 않은 경우 점수 부여</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- 점수 단계 해석 -->
+          <div class="score-criteria">
+            <h4>점수 단계 해석</h4>
+            <div class="criteria-summary">
+              <div class="criteria-row normal">
+                <span class="criteria-range">Score < 30</span>
+                <span class="criteria-label">정상</span>
+              </div>
+              <div class="criteria-row caution">
+                <span class="criteria-range">30 ≤ Score < 50</span>
+                <span class="criteria-label">주의/안심경고</span>
+              </div>
+              <div class="criteria-row high">
+                <span class="criteria-range">50 ≤ Score ≤ 60</span>
+                <span class="criteria-label">고위험</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" @click="showScoreModal = false">
+            확인
+          </button>
         </div>
       </div>
     </div>
@@ -243,8 +516,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
+import { checkFraudAccount } from '@/api/fraudAccountApi';
 
 const router = useRouter();
 
@@ -259,21 +534,72 @@ const transferInfo = ref({
   memo: '',
 });
 
-// 계좌 목록 (샘플 데이터)
+// 이상징후 점수 상태 및 표시 계산값
+const anomalyScore = ref(null);
+const isLoadingAnomaly = ref(false);
+const showScoreDetails = ref(false);
+const showScoreModal = ref(false);
+const fraudCheckMessage = ref('');
+const isFraudHighRisk = ref(false);
+// 큰 말풍선(최상위)에 의한 이체 가이드 표시
+const showBigGuideTransfer = ref(true);
+
+const anomalyLevel = computed(() => {
+  const score = anomalyScore?.value?.result?.totalScore ?? null;
+  if (score === null || score === undefined) return null;
+  if (score < 30) return 'normal';
+  if (score < 50) return 'caution';
+  return 'high';
+});
+
+const anomalyLabel = computed(() => {
+  if (!anomalyLevel.value) return '';
+  return anomalyLevel.value === 'normal'
+    ? '정상'
+    : anomalyLevel.value === 'caution'
+    ? '주의/안심경고'
+    : '고위험';
+});
+
+const anomalyDescription = computed(() => {
+  if (!anomalyLevel.value) return '';
+  if (anomalyLevel.value === 'normal')
+    return '대부분 위험 요소 없음 · 바로 송금 가능';
+  if (anomalyLevel.value === 'caution')
+    return '일부 위험 요소 존재 · 팝업 안내 + 필요 시 AI 판단';
+  return '고위험 · 송금 전 추가 확인 권장';
+});
+
+// 주의 단계에서 노출할 위험 요소 리스트
+const riskFactors = computed(() => {
+  const list = [];
+  const res =
+    anomalyScore && anomalyScore.value ? anomalyScore.value.result : null;
+  if (!res) return list;
+  if (res.previousTransferScore > 0)
+    list.push('최근 1년간 송금한 적 없는 계좌');
+  if (res.largeAmountScore > 0) list.push('큰 금액 송금');
+  if (res.nightTimeScore > 0) list.push('야간 시간대 거래');
+  if (res.dailyFrequencyScore > 0) list.push('송금횟수 많음');
+  if (res.favoriteAccountScore > 0) list.push('즐겨찾기 등록되지 않은 계좌');
+  return list;
+});
+
+// 계좌 목록 (하드코딩 샘플)
 const accounts = ref([
   {
     id: 1,
     bankName: 'KB국민은행',
-    accountNumber: '123-456789-01-234',
+    accountNumber: '004-123456-78-901',
     accountName: '김영희',
     balance: 2450000,
   },
   {
     id: 2,
-    bankName: 'KB국민은행',
-    accountNumber: '987-654321-02-345',
+    bankName: '신한은행',
+    accountNumber: '088-110-222-333',
     accountName: '김영희',
-    balance: 1200000,
+    balance: 850000,
   },
 ]);
 
@@ -288,6 +614,12 @@ const isTransferInfoValid = computed(() => {
   );
 });
 
+// 세분화된 필드 유효성 (말풍선 표시용)
+const isBankEmpty = computed(() => !transferInfo.value.bank)
+const isAccountNumberEmpty = computed(() => !transferInfo.value.accountNumber)
+const isRecipientEmpty = computed(() => !transferInfo.value.recipientName)
+const isAmountInvalid = computed(() => !transferInfo.value.amount || Number(transferInfo.value.amount) <= 0)
+
 // 메서드
 const goBack = () => {
   router.push('/');
@@ -297,9 +629,12 @@ const selectAccount = (account) => {
   selectedAccount.value = account;
 };
 
-const nextStep = () => {
+const nextStep = async () => {
   if (currentStep.value < 3) {
     currentStep.value++;
+    if (currentStep.value === 3) {
+      await calculateAnomaly();
+    }
   }
 };
 
@@ -312,6 +647,10 @@ const prevStep = () => {
 const formatNumber = (num) => {
   return new Intl.NumberFormat('ko-KR').format(num);
 };
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
 
 const formatAmount = (event) => {
   const value = event.target.value;
@@ -329,14 +668,118 @@ const getBankName = (bankCode) => {
   return banks[bankCode] || bankCode;
 };
 
+// 숫자 은행코드용 표시명 + 로고
+const bankCodeName = {
+  '004': 'KB국민은행',
+  '088': '신한은행',
+  '020': '우리은행',
+  '081': '하나은행(서울은행)',
+  '090': '카카오뱅크',
+}
+const getBankDisplayName = (code) => {
+  return bankCodeName[code] || getBankName(code)
+}
+const getBankImage = (code) => {
+  const map = {
+    '004': '/images/bank/kbbank.png',
+    '088': '/images/bank/shinhanbank.png',
+    '020': '/images/bank/wooribank.png',
+    '081': '/images/bank/kebhanabank.png',
+    '090': '/images/bank/kakaobank.png',
+  }
+  return map[code] || '/images/bank/kbbank.png'
+}
+
 const confirmTransfer = () => {
-  // 실제 이체 로직 구현
-  alert('이체가 완료되었습니다!');
-  router.push('/');
+  router.push({ name: 'realPracticeComplete', query: { title: '이체' } });
 };
+
+// 최근/즐겨찾기 (비어있으면 하드코딩)
+const activeTab = ref('recent')
+const transactions = ref([])
+const favorites = ref([])
+
+const fillTransferFromRecent = (t) => {
+  transferInfo.value.bank = t.sendBankCode || t.bank
+  transferInfo.value.accountNumber = t.payeeAccountNumber || t.accountNumber
+  transferInfo.value.recipientName = t.accountHolderName || t.recipientName || ''
+}
+const fillTransferFromFavorite = (f) => {
+  transferInfo.value.bank = f.sendBankCode || f.bank
+  transferInfo.value.accountNumber = f.sendAccountNumber || f.accountNumber
+  transferInfo.value.recipientName = f.sendBankNickname || f.nickname || ''
+}
+
+onMounted(() => {
+  if (!transactions.value.length) {
+    transactions.value = [
+      { transactionId: 1, sendBankCode: '004', payeeAccountNumber: '004-555-666-777', accountHolderName: '홍길동', transactionAmount: 50000, createdTime: '2024-01-15T09:30:00' },
+      { transactionId: 2, sendBankCode: '088', payeeAccountNumber: '088-110-222-333', accountHolderName: '김철수', transactionAmount: 120000, createdTime: '2024-01-12T13:20:00' },
+      { transactionId: 3, sendBankCode: '020', payeeAccountNumber: '1002-123-456789', accountHolderName: '김민수', transactionAmount: 780000, createdTime: '2024-01-10T11:10:00' },
+      { transactionId: 4, sendBankCode: '081', payeeAccountNumber: '370-1234-5678-90', accountHolderName: '박지성', transactionAmount: 120000, createdTime: '2024-01-08T22:05:00' },
+      { transactionId: 5, sendBankCode: '090', payeeAccountNumber: '3333-01-1234567', accountHolderName: '김아름', transactionAmount: 33000, createdTime: '2024-01-06T08:45:00' },
+    ]
+  }
+  if (!favorites.value.length) {
+    favorites.value = [
+      { favoriteId: 1, sendBankCode: '004', sendAccountNumber: '004-222-333-444', sendBankNickname: '아들 용돈' },
+      { favoriteId: 2, sendBankCode: '088', sendAccountNumber: '088-999-888-777', sendBankNickname: '관리비' },
+      { favoriteId: 3, sendBankCode: '090', sendAccountNumber: '3333-01-1234567', sendBankNickname: '카카오 이체' },
+    ]
+  }
+})
 
 const requestHelp = () => {
   router.push('/');
+};
+
+// 이상징후 점수 계산 호출 (사기 민원 선행 체크 포함)
+const calculateAnomaly = async () => {
+  try {
+    isLoadingAnomaly.value = true;
+    anomalyScore.value = null;
+
+    // 1) 사기 민원 체크 선행 호출
+    const fraudReqBody = {
+      accountNumber: transferInfo.value.accountNumber,
+    };
+    const fraudResp = await checkFraudAccount(fraudReqBody);
+    const fraudMsg = fraudResp?.data?.result || '';
+    // 화면 반영 메시지 및 위험 여부 판정
+    if (fraudMsg === '최근 3개월 내 사기민원  3건이상있습니다.') {
+      fraudCheckMessage.value = '3개월 내 3건이상 사기 신고를 당한 계좌입니다.';
+      isFraudHighRisk.value = true;
+    } else {
+      fraudCheckMessage.value = '3개월 내 3건이상 사기 신고를 당한 계좌입니다.';
+      isFraudHighRisk.value = false;
+    }
+
+    // 고위험일 경우 점수 계산 중단 (경고만 표시)
+    if (isFraudHighRisk.value) {
+      return;
+    }
+
+    // 2) 안전 메시지의 경우 점수 계산 진행
+    const requestBody = {
+      accountNumber: transferInfo.value.accountNumber,
+      transactionAmount: Number(transferInfo.value.amount),
+      transactionDateTime: new Date().toISOString(),
+    };
+    const response = await calculateAnomalyScore(requestBody);
+    if (response && response.data) {
+      anomalyScore.value = response.data;
+    }
+  } catch (e) {
+    console.error('이상징후 점수 계산 실패:', e);
+    anomalyScore.value = {
+      isSuccess: false,
+      code: 500,
+      message: '이상징후 점수 계산 실패',
+      result: { totalScore: null },
+    };
+  } finally {
+    isLoadingAnomaly.value = false;
+  }
 };
 </script>
 
@@ -1005,6 +1448,652 @@ const requestHelp = () => {
   box-shadow: var(--shadow-md);
 }
 
+/* 실전연습 가이드 하이라이트 */
+.guide-highlight {
+  position: relative;
+  animation: pulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(255, 188, 0, 0.5);
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 188, 0, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 188, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 188, 0, 0);
+  }
+}
+
+/* 말풍선 가이드 */
+.guide-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.guide-anchor { position: relative; }
+.big-guide-bubble {
+  position: fixed;
+  z-index: 6000;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid var(--kb-yellow-positive);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+  border-radius: 16px;
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #605850;
+  pointer-events: none; /* 아래 버튼 클릭 가능 */
+}
+.guide-bubble {
+  position: absolute;
+  top: -42px;
+  right: 0;
+  background: #fffef2;
+  color: #605850;
+  border: 1px solid #ffbc00;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+}
+.guide-bubble.inline {
+  position: static;
+  margin-top: 6px;
+  display: inline-block;
+}
+.guide-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 14px;
+  width: 10px;
+  height: 10px;
+  background: #fffef2;
+  border-left: 1px solid #ffbc00;
+  border-bottom: 1px solid #ffbc00;
+  transform: rotate(45deg);
+}
+.field-guide { position: relative; }
+.guide-info {
+  background: #fffef2;
+  border: 1px dashed #ffbc00;
+  color: #605850;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+/* 이상징후 점수 섹션 */
+.anomaly-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+}
+
+.anomaly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.anomaly-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--kb-gray);
+  margin: 0;
+  letter-spacing: -0.2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+.anomaly-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.anomaly-badge.normal {
+  background: var(--success);
+  color: var(--white);
+}
+.anomaly-badge.caution {
+  background: var(--kb-yellow-negative);
+  color: var(--gray-900);
+}
+.anomaly-badge.high {
+  background: var(--danger);
+  color: var(--white);
+}
+
+.badge-score {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+.anomaly-description {
+  font-size: 13px;
+  color: var(--gray-700);
+  margin-bottom: 10px;
+}
+
+/* 레벨별 안내 메모 */
+.anomaly-note {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid var(--gray-200);
+}
+.anomaly-note.success {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #a5d6a7;
+}
+.anomaly-note.caution {
+  background: #fff8e1;
+  color: #6a4f00;
+  border-color: #ffe082;
+}
+.anomaly-note.high {
+  background: #ffebee;
+  color: #b71c1c;
+  border-color: #ef9a9a;
+}
+
+.risk-list {
+  margin: 6px 0 6px 16px;
+}
+.risk-list li {
+  list-style: disc;
+  margin: 2px 0;
+}
+
+.anomaly-breakdown {
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+/* 점수 토글 버튼 */
+.anomaly-toggle {
+  display: flex;
+  justify-content: flex-start;
+  margin: 6px 0 10px 0;
+}
+.score-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--gray-300);
+  background: var(--white);
+  color: var(--gray-800);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+.score-toggle-btn:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-400);
+}
+.score-toggle-btn:active {
+  transform: translateY(1px);
+}
+.score-toggle-btn .chevron {
+  width: 14px;
+  display: inline-block;
+  text-align: center;
+  color: var(--kb-gray);
+}
+.score-toggle-btn .label-text {
+  letter-spacing: -0.2px;
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.breakdown-row:last-child {
+  border-bottom: none;
+}
+
+.breakdown-row .label {
+  font-size: 12px;
+  color: var(--gray-600);
+}
+.breakdown-row .value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.anomaly-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+  color: var(--gray-600);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 사기 민원 경고 박스 */
+.fraud-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300);
+  background: #fff1f2; /* 연한 빨간 배경 */
+  color: #b91c1c; /* 짙은 빨강 텍스트 */
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.fraud-warning.danger {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #991b1b;
+}
+.fraud-icon {
+  font-size: 16px;
+}
+.fraud-text {
+  font-size: 13px;
+}
+
+/* 이상탐지 제목 섹션 */
+.anomaly-title-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.help-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--gray-400);
+  background: var(--white);
+  color: var(--gray-600);
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-icon:hover {
+  background: var(--kb-yellow-positive);
+  color: var(--white);
+  border-color: var(--kb-yellow-positive);
+  transform: scale(1.1);
+}
+
+.help-text {
+  line-height: 1;
+}
+
+/* 모달창 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 100%;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: var(--gray-200);
+  color: var(--gray-800);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+/* 점수 계산 기준 설명 스타일 */
+.score-explanation {
+  margin-bottom: 24px;
+}
+
+.score-explanation h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.explanation-text {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.score-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.breakdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--gray-50);
+  border-radius: 4px;
+  border-left: 3px solid #605850;
+}
+
+.breakdown-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.breakdown-desc {
+  font-size: 11px;
+  color: var(--gray-600);
+  line-height: 1.3;
+}
+
+.score-criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.score-criteria h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.criteria-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.criteria-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--gray-50);
+  border-radius: 4px;
+  border-left: 3px solid var(--gray-300);
+}
+
+.criteria-row.normal {
+  border-left-color: #10b981;
+}
+
+.criteria-row.caution {
+  border-left-color: #f59e0b;
+}
+
+.criteria-row.high {
+  border-left-color: #ef4444;
+}
+
+.criteria-row .criteria-range {
+  font-size: 12px;
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+.criteria-row .criteria-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 탭 컨테이너 (최근송금/즐겨찾기) */
+.tab-container {
+  margin-bottom: 20px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 380px; /* 최근송금/즐겨찾기 카드 동일 높이 */
+}
+
+/* 탭 네비게이션 */
+.tab-navigation {
+  display: flex;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.1px;
+}
+
+.tab-button:hover {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+.tab-button.active {
+  color: var(--kb-yellow-positive);
+  background: var(--white);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--kb-yellow-positive);
+  border-radius: 2px 2px 0 0;
+}
+
+/* 탭 콘텐츠 */
+.tab-content {
+  padding: 16px;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 스크롤바 (선택) */
+.tab-content::-webkit-scrollbar { width: 6px; }
+.tab-content::-webkit-scrollbar-track { background: var(--gray-200); border-radius: 3px; }
+.tab-content::-webkit-scrollbar-thumb { background: var(--kb-yellow-positive); border-radius: 3px; }
+.tab-content::-webkit-scrollbar-thumb:hover { background: var(--primary-dark); }
+
+/* 빈 상태 */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--gray-500);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 거래 아이템 */
+.transfer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid var(--gray-200);
+  margin-bottom: 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  background: var(--white);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.transfer-item:hover {
+  background: var(--primary-light);
+  border-color: var(--kb-yellow-positive);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.transfer-item:last-child { margin-bottom: 0; }
+
+.transfer-item .bank-image {
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+}
+
+.transfer-item .bank-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.transfer-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.transfer-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transfer-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-holder { font-size: 12px; color: var(--gray-500); font-weight: 500; }
+.transfer-date { font-size: 11px; color: var(--gray-400); font-weight: 500; }
+.transfer-amount { font-size: 16px; font-weight: 700; color: var(--kb-yellow-positive); }
+.star-icon { font-size: 20px; color: var(--kb-yellow-positive); }
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .main-content {
@@ -1062,35 +2151,5 @@ const requestHelp = () => {
     padding: 12px;
     gap: 12px;
   }
-}
-
-.practice-notice {
-  margin: 0px 0 30px 0;
-  background: #fff4d6;
-  border-radius: 12px;
-  padding: 12px;
-  border-left: 4px solid var(--kb-yellow-positive);
-}
-
-.notice-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.notice-icon {
-  font-size: 32px;
-}
-
-.notice-content h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--gray-800);
-  margin-bottom: 4px;
-}
-
-.notice-content p {
-  font-size: 14px;
-  color: var(--gray-600);
 }
 </style>
