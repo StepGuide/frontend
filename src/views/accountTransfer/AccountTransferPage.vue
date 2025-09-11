@@ -97,6 +97,12 @@ const confirmTransfer = async () => {
     //   alert('이상징후 점수가 높아 이체가 제한됩니다.')
     //   return
     // }
+    // 사기 계좌이거나 점수가 50점 이상이면 지연 이체
+    if (isFraudHighRisk.value || anomalyLevel.value === 'high') {
+      transferDTO.value.transferType = 'DELAYED';
+    } else {
+      transferDTO.value.transferType = 'IMMEDIATE';
+    }
 
     const res = await store.execute();
     alert(res || '이체 완료!');
