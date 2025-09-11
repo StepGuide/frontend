@@ -6,6 +6,7 @@ import { calculateAnomalyScore } from '@/api/AnomalyDetectionApi';
 import { checkFraudAccount } from '@/api/fraudAccountApi';
 import { favorites, getFavorites } from '@/api/favoritesApi';
 import { useAuthStore } from '@/stores/auth';
+import api from '@/api/axios';
 import { useBankStore } from '@/stores/bank';
 
 const router = useRouter();
@@ -102,6 +103,7 @@ const confirmTransfer = async () => {
     // }
     // 사기 계좌이거나 점수가 50점 이상이면 지연 이체
     if (isFraudHighRisk.value || anomalyLevel.value === 'high') {
+      sendGuardianAlert();
       transferDTO.value.transferType = 'DELAYED';
     } else {
       transferDTO.value.transferType = 'IMMEDIATE';
@@ -340,6 +342,20 @@ const formatDate = (dateStr) => {
     day: '2-digit',
   });
 };
+async function sendGuardianAlert() {
+  try {
+    const { data } = await api.post('/push/alert-guardian', {});
+    alert(`전송 성공: ${typeof data === 'string' ? data : 'OK'}`);
+  } catch (e) {
+    const status = e?.response?.status;
+    const msg = e?.response?.data || e?.message || 'unknown';
+    alert(
+      `전송 실패: ${status ?? ''} ${
+        typeof msg === 'string' ? msg : JSON.stringify(msg)
+      }`
+    );
+  }
+}
 
 onMounted(async () => {
   // const userId = 1 // 로그인 유저 ID
@@ -367,7 +383,7 @@ onMounted(async () => {
       }
     }
   }
-});
+  });
 </script>
 
 <template>
