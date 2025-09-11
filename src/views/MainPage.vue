@@ -3,19 +3,31 @@
     <!-- 상단 네비게이션 -->
     <nav class="navbar">
       <div class="nav-content">
-        <div class="logo">
+        <div class="logo" v-tts:MAIN_INTRO.hover="'SERVICE_OVERVIEW'">
           <span class="logo-text">KB 금융 도우미</span>
         </div>
         <div class="nav-actions">
-      <!-- 로그인 안됨: 카카오 로그인 버튼 -->
-      <button v-if="!auth.isLoggedIn" class="mode-toggle-btn login-btn" @click="goLogin">
-        로그인
-      </button>
-      <!-- 로그인 됨: 로그아웃 + (옵션) 보호자 푸시 테스트 -->
-        <button v-else class="mode-toggle-btn logout-btn" @click="kakaoHardLogout">
-    로그아웃
-  </button>
-      <button class="mode-toggle-btn" @click="toggleToGuardianMode">
+          <!-- 로그인 안됨: 카카오 로그인 버튼 -->
+          <button
+            v-if="!auth.isLoggedIn"
+            class="mode-toggle-btn login-btn"
+            @click="goLogin"
+          >
+            로그인
+          </button>
+          <!-- 로그인 됨: 로그아웃 + (옵션) 보호자 푸시 테스트 -->
+          <button
+            v-else
+            class="mode-toggle-btn logout-btn"
+            @click="kakaoHardLogout"
+          >
+            로그아웃
+          </button>
+          <button
+            class="mode-toggle-btn"
+            @click="toggleToGuardianMode"
+            v-tts:SERVICE_GUIDE.hover="'GUARDIAN_MODE_INFO'"
+          >
             <span class="toggle-text">보호자 모드</span>
           </button>
         </div>
@@ -33,15 +45,20 @@
 
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
+      <!-- 기존 제목 유지, TTS 디렉티브만 추가 -->
+      <h2 v-tts:ONBOARDING.auto="'WELCOME_BACK'">도움이 필요하세요?</h2>
       <!-- 환영 메시지 -->
       <div class="welcome-section">
-        <div class="welcome-content">
+        <div
+          class="welcome-content"
+          v-tts:MAIN_INTRO.auto="'TIME_BASED_WELCOME'"
+        >
           <h1 class="welcome-title">안녕하세요, {{ userName }}님!</h1>
           <p class="welcome-subtitle">
             오늘도 안전하게 금융 서비스를 이용해보세요
           </p>
         </div>
-        <div class="help-request-card">
+        <div class="help-request-card" v-tts:HELP_GUIDE.hover="'GUARDIAN_HELP'">
           <div class="help-content">
             <!-- 헤더 섹션 -->
             <div class="help-header">
@@ -52,17 +69,20 @@
             </div>
 
             <!-- 코드가 생성되지 않은 상태 -->
-            <div v-if="!helpCode" class="code-generation-section">
+            <div v-if="!generatedCode" class="code-generation-section">
               <div class="generation-info">
-                <div class="info-item">
+                <div
+                  class="info-item"
+                  v-tts:SERVICE_GUIDE.hover="'SECURITY_INFO'"
+                >
                   <span class="info-icon">🔐</span>
                   <span class="info-text">보안 연결</span>
                 </div>
-                <div class="info-item">
+                <div class="info-item" v-tts:HELP_GUIDE.hover="'STEP_BY_STEP'">
                   <span class="info-icon">⚡</span>
                   <span class="info-text">즉시 연결</span>
                 </div>
-                <div class="info-item">
+                <div class="info-item" v-tts:HELP_GUIDE.hover="'GUARDIAN_HELP'">
                   <span class="info-icon">👨‍💼</span>
                   <span class="info-text">전문가 상담</span>
                 </div>
@@ -72,6 +92,7 @@
                 class="help-request-btn"
                 @click="generateHelpCode"
                 :disabled="isLoading"
+                v-tts:HELP_GUIDE.focus="'HOW_TO_USE'"
               >
                 <div class="btn-content">
                   <span v-if="isLoading" class="loading-spinner"></span>
@@ -96,9 +117,11 @@
                 <div class="connection-status">
                   <div
                     class="status-indicator"
-                    :class="{ 
-                      connected: isGuardianConnected && !helpCodeStore.isCheckingConnection,
-                      checking: helpCodeStore.isCheckingConnection
+                    :class="{
+                      connected:
+                        isGuardianConnected &&
+                        !helpCodeStore.isCheckingConnection,
+                      checking: helpCodeStore.isCheckingConnection,
                     }"
                   >
                     <span class="status-dot"></span>
@@ -161,7 +184,7 @@
                 <button
                   v-if="isGuardianConnected"
                   class="action-btn screen-share"
-                  :class="{ 'sharing': isSharing }"
+                  :class="{ sharing: isSharing }"
                   @click="toggleScreenShare"
                   :disabled="!isGuardianConnected || !isWebSocketConnected"
                 >
@@ -173,7 +196,7 @@
 
                 <button
                   class="action-btn"
-                  :class="{ 'primary': !helpCode, 'danger': helpCode }"
+                  :class="{ primary: !helpCode, danger: helpCode }"
                   @click="toggleConnection"
                   :disabled="!helpCode"
                 >
@@ -189,13 +212,21 @@
       <!-- 계좌 정보 -->
       <div class="account-overview">
         <div class="section-header">
-          <h2>내 계좌 현황</h2>
-          <button class="view-all-btn" @click="goToAccountOverview">
+          <h2 v-tts:SERVICE_GUIDE.hover="'ACCOUNT_INFO'">내 계좌 현황</h2>
+          <button
+            class="view-all-btn"
+            @click="goToAccountOverview"
+            v-tts:INTERACTION_GUIDE.hover="'BUTTON_HOVER'"
+          >
             전체보기
           </button>
         </div>
+
         <div class="account-grid">
-          <div class="account-card primary">
+          <div
+            class="account-card primary"
+            v-tts:SERVICE_GUIDE.hover="'ACCOUNT_INFO'"
+          >
             <div class="card-header">
               <img
                 :src="primaryBankInfo.image"
@@ -210,10 +241,20 @@
               <div class="account-number">{{ accountNumber }}</div>
             </div>
             <div class="card-actions">
-              <button class="action-btn transfer" @click="goToTransfer">
+              <button
+                class="action-btn transfer"
+                @click="goToTransfer"
+                v-tts:SERVICE_GUIDE.focus="'TRANSFER_INFO'"
+              >
                 이체
               </button>
-              <button class="action-btn" @click="goToInquiry">조회</button>
+              <button
+                class="action-btn"
+                @click="goToInquiry"
+                v-tts:SERVICE_GUIDE.focus="'ACCOUNT_INFO'"
+              >
+                조회
+              </button>
             </div>
           </div>
 
@@ -245,10 +286,15 @@
       <!-- 주요 서비스 -->
       <div class="services-section">
         <div class="section-header">
-          <h2>주요 서비스</h2>
+          <h2 v-tts:MAIN_INTRO.hover="'FEATURES_INTRO'">주요 서비스</h2>
         </div>
+
         <div class="services-grid">
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('transfer')"
+            v-tts:SERVICE_GUIDE.hover="'TRANSFER_INFO'"
+          >
             <div class="service-icon">💳</div>
             <h3>이체하기</h3>
             <p>안전하고 간편한 계좌이체</p>
@@ -257,21 +303,33 @@
             </button>
           </div>
 
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('practice')"
+            v-tts:SERVICE_GUIDE.hover="'PRACTICE_INFO'"
+          >
             <div class="service-icon">🎯</div>
             <h3>연습 모드</h3>
             <p>실제 계좌에 영향 없이 연습</p>
             <button class="service-btn" @click="goToPractice">연습하기</button>
           </div>
 
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('security')"
+            v-tts:SERVICE_GUIDE.hover="'SECURITY_INFO'"
+          >
             <div class="service-icon">🔒</div>
             <h3>보안설정</h3>
             <p>계좌 보안 관리</p>
             <button class="service-btn">설정하기</button>
           </div>
 
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('favorites')"
+            v-tts:SERVICE_GUIDE.hover="'FAVORITES_INFO'"
+          >
             <div class="service-icon">⭐</div>
             <h3>즐겨찾기</h3>
             <p>계좌 즐겨찾기 관리</p>
@@ -280,7 +338,11 @@
             </button>
           </div>
 
-          <div class="service-card">
+          <div
+            class="service-card"
+            @mouseover="onServiceCardHover('education')"
+            v-tts:SERVICE_GUIDE.hover="'EDUCATION_INFO'"
+          >
             <div class="service-icon">📚</div>
             <h3>금융교육</h3>
             <p>안전한 금융 이용법</p>
@@ -289,22 +351,35 @@
         </div>
       </div>
 
+      <!--  NEW: 떠다니는 도움말 팁 -->
+      <div class="floating-help-tips" v-if="showHelpTips">
+        <div class="help-tip" v-for="tip in currentTips" :key="tip.id">
+          <div class="tip-content" v-tts:HELP_GUIDE.auto="tip.ttsKey">
+            <span class="tip-icon">💡</span>
+            <span class="tip-text">{{ tip.text }}</span>
+            <button class="tip-close" @click="closeTip(tip.id)">×</button>
+          </div>
+        </div>
+      </div>
       <!-- 빠른 도움말 -->
       <div class="quick-help">
         <div class="help-grid">
-          <div class="help-item">
+          <div class="help-item" v-tts:HELP_GUIDE.hover="'STEP_BY_STEP'">
             <div class="help-icon">❓</div>
             <span>이체 방법</span>
           </div>
-          <div class="help-item">
+          <div class="help-item" v-tts:HELP_GUIDE.hover="'EMERGENCY_STOP'">
             <div class="help-icon">❓</div>
             <span>보안 설정</span>
           </div>
-          <div class="help-item">
+          <div class="help-item" v-tts:ACCESSIBILITY_GUIDE.hover="'FONT_SIZE'">
             <div class="help-icon">❓</div>
             <span>계좌 조회</span>
           </div>
-          <div class="help-item">
+          <div
+            class="help-item"
+            v-tts:ACCESSIBILITY_GUIDE.hover="'VOICE_SPEED'"
+          >
             <div class="help-icon">❓</div>
             <span>비밀번호 변경</span>
           </div>
@@ -312,15 +387,15 @@
       </div>
     </div>
   </div>
-  <GuardianPhoneModal 
-    :open="showGuardianModal" 
+  <GuardianPhoneModal
+    :open="showGuardianModal"
     @close="skipGuardian"
     @saved="handleGuardianSaved"
   />
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { createHelpRequest } from '@/api/index';
@@ -331,37 +406,36 @@ import { useScreenShareStore } from '@/stores/screenShare';
 import GuardianPhoneModal from './GuardianPhoneModal.vue';
 import api from '@/api/axios';
 
+// 상태 변수들
 const auth = useAuthStore();
 const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
 const LOGOUT_REDIRECT_URI = import.meta.env.VITE_KAKAO_LOGOUT_REDIRECT_URI;
 const REDIRECT_URI = import.meta.env.VITE_KAKAO_REDIRECT_URI;
 
-// 상태
 const me = ref(null);
 const showGuardianModal = ref(false);
-
 const router = useRouter();
 const isLoading = ref(false);
 const isCopying = ref(false);
 const errorMessage = ref('');
 
+// NEW: 추가된 상태 변수들
+const showIntro = ref(true);
+const showHelpTips = ref(false);
+const currentTips = ref([]);
 
 // 도움 요청 코드 store
 const helpCodeStore = useHelpCodeStore();
-const authStore = useAuthStore();
 
 // 웹소켓 연결/메시지
 const helpCode = computed(() => helpCodeStore.generatedCode);
+const generatedCode = computed(() => helpCodeStore.generatedCode);
 
 // 사용자 이름 가져오기
 const userName = computed(() => {
-  // API에서 가져온 사용자 정보 사용
   if (me.value && me.value.username) {
-    console.log('👤 computed userName:', me.value.username);
     return me.value.username;
   }
-  // 사용자 정보가 없으면 기본값 사용
-  console.log('⚠️ 사용자 이름이 없어서 기본값 사용');
   return '사용자';
 });
 
@@ -379,154 +453,9 @@ const localVideo = ref(null);
 const { isSharing, isConnected } = screenShareStore;
 
 // 보호자 연결 상태
-const isGuardianConnected = computed(() => helpCodeStore.isGuardianConnected)
+const isGuardianConnected = computed(() => helpCodeStore.isGuardianConnected);
 
-// 보호자 메시지 감지
-watch(guardianMessage, (newMessage) => {
-  if (newMessage && newMessage.trim()) {
-    console.log('📨 MainPage 보호자 메시지 수신:', newMessage)
-    console.log('🔍 현재 상태:', {
-      helpCode: helpCode.value,
-      currentGuardianConnected: helpCodeStore.isGuardianConnected,
-      messageLength: newMessage.length,
-      messageType: typeof newMessage
-    })
-    
-    // 보호자 연결 신호인지 확인
-    if (newMessage === 'GUARDIAN_CONNECTED') {
-      helpCodeStore.setGuardianConnected(true)
-      console.log('✅ 보호자 연결 감지됨!')
-      // 사용자에게 연결 확인 응답 보내기 (지연 시간 단축)
-      if (client && client.connected && helpCode.value) {
-        setTimeout(() => {
-          client.publish({
-            destination: `/app/message/${helpCode.value}`,
-            body: 'USER_CONNECTION_CONFIRMED'
-          })
-          console.log('📤 사용자 연결 확인 응답 전송됨')
-        }, 100) // 500ms → 100ms로 단축
-      }
-    } else if (newMessage === 'GUARDIAN_DISCONNECTED') {
-      helpCodeStore.setGuardianConnected(false)
-      console.log('❌ 보호자 연결 해제 감지됨!')
-    } else if (newMessage === 'GUARDIAN_CONNECTION_ALIVE') {
-      // 보호자 연결 상태 확인 응답
-      helpCodeStore.setGuardianConnected(true)
-      console.log('✅ 보호자 연결 상태 확인됨 (페이지 복원)')
-      
-      // 타임아웃 취소
-      if (window.guardianCheckTimeout) {
-        clearTimeout(window.guardianCheckTimeout)
-        window.guardianCheckTimeout = null
-        console.log('⏰ 보호자 연결 확인 타임아웃 취소됨')
-      }
-    } else {
-      // 일반 메시지 수신 시 연결 상태로 판단 (단, 빈 메시지나 시스템 메시지 제외)
-      if (newMessage.trim() && 
-          !newMessage.startsWith('SYSTEM_') && 
-          !newMessage.startsWith('ERROR_') &&
-          !newMessage.startsWith('USER_CONNECTION') && // 사용자가 보낸 연결 확인 메시지 제외
-          newMessage !== 'ping' && 
-          newMessage !== 'pong') {
-        helpCodeStore.setGuardianConnected(true)
-        console.log('✅ 보호자 일반 메시지 수신으로 연결 상태 확인됨:', newMessage)
-      } else {
-        console.log('⚠️ 시스템 메시지나 사용자 발신 메시지 무시됨:', newMessage)
-      }
-    }
-  }
-});
-
-// 코드 변경 시 재연결
-watch(guardianMessage, (newMessage) => {
-  if (newMessage && newMessage.trim()) {
-    console.log('📨 MainPage 보호자 메시지 수신:', newMessage)
-    console.log('🔍 현재 상태:', {
-      helpCode: helpCode.value,
-      currentGuardianConnected: helpCodeStore.isGuardianConnected,
-      messageLength: newMessage.length,
-      messageType: typeof newMessage
-    })
-    
-    // 보호자 연결 신호인지 확인
-    if (newMessage === 'GUARDIAN_CONNECTED') {
-      helpCodeStore.setGuardianConnected(true)
-      console.log('✅ 보호자 연결 감지됨!')
-      // 사용자에게 연결 확인 응답 보내기 (지연 시간 단축)
-      if (client && client.connected && helpCode.value) {
-        setTimeout(() => {
-          client.publish({
-            destination: `/app/message/${helpCode.value}`,
-            body: 'USER_CONNECTION_CONFIRMED'
-          })
-          console.log('📤 사용자 연결 확인 응답 전송됨')
-        }, 100) // 500ms → 100ms로 단축
-      }
-    } else if (newMessage === 'GUARDIAN_DISCONNECTED') {
-      helpCodeStore.setGuardianConnected(false)
-      console.log('❌ 보호자 연결 해제 감지됨!')
-    } else if (newMessage === 'GUARDIAN_CONNECTION_ALIVE') {
-      // 보호자 연결 상태 확인 응답
-      helpCodeStore.setGuardianConnected(true)
-      console.log('✅ 보호자 연결 상태 확인됨 (페이지 복원)')
-      
-      // 타임아웃 취소
-      if (window.guardianCheckTimeout) {
-        clearTimeout(window.guardianCheckTimeout)
-        window.guardianCheckTimeout = null
-        console.log('⏰ 보호자 연결 확인 타임아웃 취소됨')
-      }
-    } else {
-      // 일반 메시지 수신 시 연결 상태로 판단 (단, 빈 메시지나 시스템 메시지 제외)
-      if (newMessage.trim() && 
-          !newMessage.startsWith('SYSTEM_') && 
-          !newMessage.startsWith('ERROR_') &&
-          !newMessage.startsWith('USER_CONNECTION') && // 사용자가 보낸 연결 확인 메시지 제외
-          newMessage !== 'ping' && 
-          newMessage !== 'pong') {
-        helpCodeStore.setGuardianConnected(true)
-        console.log('✅ 보호자 일반 메시지 수신으로 연결 상태 확인됨:', newMessage)
-      } else {
-        console.log('⚠️ 시스템 메시지나 사용자 발신 메시지 무시됨:', newMessage)
-      }
-    }
-  }
-});
-
-// 코드 변경 감지하여 웹소켓 재연결
-watch(helpCode, (newCode, oldCode) => {
-  console.log('🔄 MainPage 코드 변경됨:', oldCode, '->', newCode)
-  if (newCode && newCode !== oldCode) {
-    // 기존 연결 해제 후 새 코드로 재연결
-    disconnectWebSocket()
-    // 보호자 연결 상태 초기화
-    helpCodeStore.setGuardianConnected(false)
-    
-    // WebRTC 코드 업데이트 (store를 통해)
-    if (screenShareStore.helpCode !== newCode) {
-      // 새로운 코드로 WebRTC 인스턴스 재초기화
-      screenShareStore.initializeWebRTC(newCode, client)
-      console.log('🔄 WebRTC 코드 업데이트됨:', newCode)
-    }
-    
-    setTimeout(() => {
-      connectWebSocket(newCode)
-      // WebRTC 시그널링도 재설정
-      setupWebRTCSignaling()
-      console.log('🔗 MainPage 새 코드로 웹소켓 재연결:', newCode)
-    }, 500)
-  }
-}, { immediate: true })
-
-// WebSocket 연결 상태 감지 - 연결 완료 시 필요한 경우에만 보호자 상태 확인
-watch(isWebSocketConnected, (newConnected, oldConnected) => {
-  if (newConnected && !oldConnected && helpCode.value && !helpCodeStore.isGuardianConnected) {
-    console.log('🔗 WebSocket 연결 완료 감지, 보호자 상태 확인 시작')
-    setTimeout(() => {
-      checkGuardianConnectionStatus()
-    }, 200)
-  }
-})
+const tts = inject('tts'); // TTS 주입
 
 // 계좌 정보
 const accountNumber = ref('004-123456-78-90');
@@ -537,10 +466,79 @@ const primaryBankInfo = computed(() => {
   const bankCode = extractBankCode(accountNumber.value);
   return getBankInfo(bankCode);
 });
-const secondaryBankInfo = computed(() => {
-  const bankCode = extractBankCode(secondaryAccountNumber.value);
-  return getBankInfo(bankCode);
-});
+
+// 함수들
+
+// NEW: 추가된 함수들
+const startGuidedTour = () => {
+  showIntro.value = false;
+  startInteractiveTour();
+};
+
+const showContextualTips = () => {
+  const tips = [
+    {
+      id: 1,
+      text: '우측 상단의 🔊 버튼으로 음성 안내를 켜고 끌 수 있어요',
+      ttsKey: 'VOICE_CONTROL',
+    },
+    {
+      id: 2,
+      text: "도움이 필요하시면 '도움 요청하기' 버튼을 눌러주세요",
+      ttsKey: 'GUARDIAN_HELP',
+    },
+    {
+      id: 3,
+      text: "처음이시라면 '연습 모드'로 먼저 체험해보세요",
+      ttsKey: 'HOW_TO_USE',
+    },
+  ];
+
+  tips.forEach((tip, index) => {
+    setTimeout(() => {
+      currentTips.value.push(tip);
+      if (tts) {
+        tts.speak('HELP_GUIDE', tip.ttsKey);
+      }
+    }, index * 3000);
+  });
+};
+
+const startInteractiveTour = () => {
+  if (tts) {
+    tts.speak('HELP_GUIDE', 'HOW_TO_USE');
+  }
+
+  const tourSteps = [
+    { selector: '.account-card', message: 'ACCOUNT_INFO' },
+    { selector: '.service-card:first-child', message: 'TRANSFER_INFO' },
+    { selector: '.help-request-card', message: 'GUARDIAN_HELP' },
+    { selector: '.service-card:nth-child(2)', message: 'PRACTICE_INFO' },
+  ];
+
+  tourSteps.forEach((step, index) => {
+    setTimeout(() => {
+      highlightElement(step.selector);
+      if (tts) {
+        tts.speak('SERVICE_GUIDE', step.message);
+      }
+    }, index * 4000);
+  });
+};
+
+const highlightElement = (selector) => {
+  const element = document.querySelector(selector);
+  if (element) {
+    element.classList.add('tour-highlight');
+    setTimeout(() => {
+      element.classList.remove('tour-highlight');
+    }, 3000);
+  }
+};
+
+const closeTip = (tipId) => {
+  currentTips.value = currentTips.value.filter((tip) => tip.id !== tipId);
+};
 
 // 라우팅
 const toggleToGuardianMode = () => router.push('/guardian');
@@ -551,26 +549,50 @@ const goToPractice = () => router.push('/practice/PracticeMainPage');
 const goToAccountFavorites = () => router.push('/account-favorites');
 const goToEducation = () => router.push('/education');
 
+// 로그인/로그아웃
+function goLogin() {
+  router.push({ name: 'login' });
+}
+
+async function kakaoHardLogout() {
+  try {
+    try {
+      if (typeof unregisterPushNotifications === 'function') {
+        await unregisterPushNotifications();
+      }
+    } catch {}
+
+    await auth.logout();
+
+    const url = new URL('https://kauth.kakao.com/oauth/logout');
+    url.searchParams.set('client_id', KAKAO_CLIENT_ID);
+    url.searchParams.set('logout_redirect_uri', LOGOUT_REDIRECT_URI);
+    window.location.href = url.toString();
+  } catch (e) {
+    console.error('[kakaoHardLogout] error:', e);
+  }
+}
+
 // 도움 요청 코드 생성
 const generateHelpCode = async () => {
   try {
     isLoading.value = true;
     errorMessage.value = '';
 
-    // 사용자 ID (실제로는 인증된 사용자 ID를 사용해야 함)
-    const userId = 'user123'; // 실제 사용자 ID로 변경 필요
+    const userId = 'user123';
+    const helpCodeResult = await createHelpRequest(userId);
 
-    // 도움 요청 코드 생성 - API에서 6자리 코드 문자열을 직접 반환
-    const helpCode = await createHelpRequest(userId);
+    // 🎵 코드 생성 시 숫자를 하나씩 읽어주기
+    if (tts) {
+      setTimeout(() => {
+        tts.speakDigits(helpCodeResult, '인증 코드가 생성되었습니다.');
+      }, 500);
+    }
 
-    console.log('생성된 도움 요청 코드:', helpCode);
-    // store에 저장
-    helpCodeStore.setGeneratedCode(helpCode);
+    helpCodeStore.setGeneratedCode(helpCodeResult);
   } catch (error) {
     console.error('도움 요청 생성 실패:', error);
     errorMessage.value = '도움 요청 생성에 실패했습니다. 다시 시도해주세요.';
-
-    // 에러 발생 시 기본 코드 생성
     helpCodeStore.setGeneratedCode('123456');
   } finally {
     isLoading.value = false;
@@ -583,52 +605,39 @@ const generateNewCode = async () => {
 
 // WebSocket을 통한 보호자 연결 상태 확인
 const checkGuardianConnectionStatus = () => {
-  console.log('🔍 checkGuardianConnectionStatus 호출됨')
-  
   if (!helpCode.value) {
-    console.log('⚠️ 도움 코드가 없어서 연결 상태 확인 불가')
-    helpCodeStore.setGuardianConnected(false)
-    return
+    helpCodeStore.setGuardianConnected(false);
+    return;
   }
-  
-  console.log('🔍 WebSocket을 통한 보호자 연결 상태 확인:', helpCode.value)
-  
-  // 초기 상태를 false로 설정하고 확인 시작 (중요!)
-  console.log('🔄 연결 상태 확인 시작 - false로 초기화')
-  helpCodeStore.setGuardianConnected(false)
-  helpCodeStore.setCheckingConnection(true)
-  
-  // WebSocket 연결 확인 후 보호자에게 상태 확인 메시지 전송
+
+  helpCodeStore.setGuardianConnected(false);
+  helpCodeStore.setCheckingConnection(true);
+
   const attemptStatusCheck = () => {
     if (client && client.connected && isWebSocketConnected.value) {
       try {
-        console.log('📤 보호자 연결 상태 확인 요청 전송')
         client.publish({
           destination: `/app/message/${helpCode.value}`,
-          body: 'USER_CONNECTION_CHECK'
-        })
-        
-        // 1.5초 후에도 응답이 없으면 연결 해제 상태로 확정 (2초 → 1.5초로 단축)
+          body: 'USER_CONNECTION_CHECK',
+        });
+
         const timeoutId = setTimeout(() => {
           if (!helpCodeStore.isGuardianConnected) {
-            console.log('⚠️ 보호자 연결 확인 응답 없음 - 연결 해제 상태 확정')
-            helpCodeStore.setGuardianConnected(false)
+            helpCodeStore.setGuardianConnected(false);
           }
-        }, 1500) // 2000ms → 1500ms로 단축
-        
-        // 응답을 받으면 타임아웃 취소하도록 ID 저장
-        window.guardianCheckTimeout = timeoutId
+        }, 1500);
+
+        window.guardianCheckTimeout = timeoutId;
       } catch (error) {
-        console.error('❌ 보호자 연결 상태 확인 실패:', error)
-        helpCodeStore.setGuardianConnected(false)
+        console.error('❌ 보호자 연결 상태 확인 실패:', error);
+        helpCodeStore.setGuardianConnected(false);
       }
     } else {
-      console.log('⏳ WebSocket 연결 대기 중...')
-      setTimeout(attemptStatusCheck, 300) // 500ms → 300ms로 단축
+      setTimeout(attemptStatusCheck, 300);
     }
-  }
-  
-  attemptStatusCheck()
+  };
+
+  attemptStatusCheck();
 };
 
 // 코드 복사
@@ -636,112 +645,80 @@ const copyCode = async () => {
   try {
     isCopying.value = true;
     await navigator.clipboard.writeText(helpCode.value);
-    // 복사 성공 피드백 (선택사항)
-    console.log('코드가 클립보드에 복사되었습니다:', helpCode.value);
+
+    // 🎵 코드 복사 시 음성 안내
+    if (tts) {
+      tts.speak('SYSTEM', 'CODE_COPIED');
+    }
   } catch (error) {
     console.error('코드 복사 실패:', error);
     errorMessage.value = '코드 복사에 실패했습니다.';
   } finally {
     isCopying.value = false;
   }
-}
+};
 
 // 화면 공유 토글
 const toggleScreenShare = async () => {
   try {
-    // WebSocket 연결 상태 확인
     if (!isWebSocketConnected.value) {
-      errorMessage.value = 'WebSocket에 연결되지 않았습니다. 먼저 도움 요청 코드를 생성해주세요.';
+      errorMessage.value =
+        'WebSocket에 연결되지 않았습니다. 먼저 도움 요청 코드를 생성해주세요.';
       return;
     }
 
-    // 보호자 연결 상태 확인
     if (!isGuardianConnected.value) {
-      errorMessage.value = '보호자가 연결되지 않았습니다. 보호자가 연결될 때까지 기다려주세요.';
+      errorMessage.value =
+        '보호자가 연결되지 않았습니다. 보호자가 연결될 때까지 기다려주세요.';
       return;
     }
 
     if (isSharing.value) {
-      // 화면 공유 중지
-      screenShareStore.stopScreenShare()
-      console.log('🛑 화면 공유 중지됨')
+      screenShareStore.stopScreenShare();
     } else {
-      // 화면 공유 시작
       try {
-        await screenShareStore.startScreenShare()
-        console.log('📺 화면 공유 시작됨')
+        await screenShareStore.startScreenShare();
       } catch (error) {
-        console.error('❌ 화면 공유 시작 실패:', error)
-        errorMessage.value = '화면 공유에 실패했습니다: ' + error.message
-        throw error
+        console.error('❌ 화면 공유 시작 실패:', error);
+        errorMessage.value = '화면 공유에 실패했습니다: ' + error.message;
+        throw error;
       }
     }
   } catch (error) {
-    console.error('❌ 화면 공유 토글 실패:', error)
-    errorMessage.value = '화면 공유에 실패했습니다: ' + error.message
+    console.error('❌ 화면 공유 토글 실패:', error);
+    errorMessage.value = '화면 공유에 실패했습니다: ' + error.message;
   }
-}
+};
 
 // WebRTC 시그널링 구독
 const setupWebRTCSignaling = () => {
   if (!client) {
-    console.log('⚠️ STOMP 클라이언트 준비 전');
     return;
   }
-  // STOMP 연결 상태 확인
+
   if (!client.connected) {
-    console.log('⚠️ STOMP 연결이 아직 완료되지 않음. 2초 후 재시도...');
     setTimeout(() => {
       setupWebRTCSignaling();
     }, 2000);
     return;
   }
 
-  console.log('✅ STOMP 연결 확인. 시그널링 구독 시작...');
-  const webrtcMethods = screenShareStore.getWebRTCMethods()
+  const webrtcMethods = screenShareStore.getWebRTCMethods();
   if (!webrtcMethods || !webrtcMethods.handleAnswer) {
-    console.warn('⚠️ WebRTC 메서드를 사용할 수 없습니다. WebRTC 인스턴스를 먼저 초기화해주세요.');
     return;
   }
 
   try {
     // Answer 수신
-    client.subscribe(`/topic/webrtc/answer/${helpCode.value || '123456'}`, (message) => {
-      console.log('📥 Answer 메시지 수신:', message.body);
-      const data = JSON.parse(message.body);
-      if (data.type === 'answer') {
-        console.log('✅ Answer 타입 확인됨, 처리 시작...');
-        webrtcMethods.handleAnswer(new RTCSessionDescription(data));
-      } else {
-        console.warn('⚠️ 잘못된 Answer 타입:', data.type);
+    client.subscribe(
+      `/topic/webrtc/answer/${helpCode.value || '123456'}`,
+      (message) => {
+        const data = JSON.parse(message.body);
+        if (data.type === 'end') {
+          webrtcMethods.handleEnd();
+        }
       }
-    });
-
-    // ICE 후보 수신
-    client.subscribe(`/topic/webrtc/ice/${helpCode.value || '123456'}`, (message) => {
-      console.log('📥 ICE 후보 메시지 수신:', message.body);
-      const data = JSON.parse(message.body);
-      if (data.type === 'ice-candidate') {
-        console.log('✅ ICE 후보 타입 확인됨, 처리 시작...');
-        webrtcMethods.handleIceCandidate(data.candidate);
-      } else {
-        console.warn('⚠️ 잘못된 ICE 후보 타입:', data.type);
-      }
-    });
-
-    // 연결 종료 수신
-    client.subscribe(`/topic/webrtc/end/${helpCode.value || '123456'}`, (message) => {
-      console.log('📥 연결 종료 메시지 수신:', message.body);
-      const data = JSON.parse(message.body);
-      if (data.type === 'end') {
-        console.log('✅ 연결 종료 타입 확인됨, 처리 시작...');
-        webrtcMethods.handleEnd();
-      } else {
-        console.warn('⚠️ 잘못된 연결 종료 타입:', data.type);
-      }
-    });
-
-    console.log('✅ WebRTC 시그널링 구독 완료');
+    );
   } catch (error) {
     console.error('❌ WebRTC 시그널링 구독 실패:', error);
   }
@@ -749,193 +726,46 @@ const setupWebRTCSignaling = () => {
 
 // 연결 상태 토글
 const toggleConnection = () => {
-  console.log('🔌 MainPage toggleConnection 호출됨');
-  console.log('🔌 MainPage isGuardianConnected:', isGuardianConnected.value);
-  console.log('🔌 MainPage helpCode:', helpCode.value);
-  console.log('🔌 MainPage store 상태:', {
-    generatedCode: helpCodeStore.generatedCode,
-    isConnectionDisabled: helpCodeStore.isConnectionDisabled,
-    connectionTerminated: helpCodeStore.connectionTerminated,
-  });
-
-  // 코드가 생성되어 있으면 연결 끊기로 처리
   if (helpCode.value) {
-    console.log('🔌 MainPage 연결 끊기 시작 (코드 존재)');
-
     // 연결 끊기 처리
     disconnectWebSocket();
     helpCodeStore.setGuardianConnected(false);
-    helpCodeStore.disableConnection(); // store에 연결 비활성화 상태 저장
-    helpCodeStore.terminateConnection(); // GuardianView에 연결 해제 신호 전송
-
-    console.log(
-      '🔌 MainPage store 연결 비활성화 완료:',
-      helpCodeStore.isConnectionDisabled
-    );
-    console.log(
-      '🔌 MainPage 연결 해제 신호 설정 완료:',
-      helpCodeStore.connectionTerminated
-    );
-
-    // 연결 끊기 시 초기화면으로 돌아가기
+    helpCodeStore.disableConnection();
+    helpCodeStore.terminateConnection();
     helpCodeStore.clearGeneratedCode();
-
-    console.log('🔌 MainPage 코드 초기화 완료');
-    console.log('🔌 MainPage 최종 store 상태:', {
-      generatedCode: helpCodeStore.generatedCode,
-      isConnectionDisabled: helpCodeStore.isConnectionDisabled,
-      connectionTerminated: helpCodeStore.connectionTerminated,
-    });
 
     alert('보호자와의 연결이 끊어졌습니다.');
   } else {
-    console.log('🔌 MainPage 연결하기 시작');
-    // 보호자가 연결되지 않은 상태라면 도움 요청 시작
     if (!helpCode.value) {
       alert('먼저 도움 요청 코드를 생성해주세요.');
       return;
     }
-    // 웹소켓 연결 시도
     connectWebSocket(helpCode.value);
-    helpCodeStore.enableConnection(); // store에 연결 활성화 상태 저장
+    helpCodeStore.enableConnection();
     alert(
       `도움 요청이 시작되었습니다!\n코드: ${helpCode.value}\n\n보호자가 이 코드를 입력하면 실시간 채팅이 가능합니다.`
     );
   }
 };
 
+// 서비스 카드 호버 시 상세 설명
+const onServiceCardHover = (serviceType) => {
+  if (tts && tts.isEnabled.value) {
+    const messages = {
+      transfer: 'TRANSFER_INFO',
+      practice: 'PRACTICE_INFO',
+      account: 'ACCOUNT_INFO',
+      education: 'EDUCATION_INFO',
+      security: 'SECURITY_INFO',
+    };
 
-// ---------- 마운트 시: WebRTC 초기화 대기 & 시그널링 설정 ----------
-onMounted(() => {
-  console.log('🚀 MainPage 마운트됨')
-  
-  // 지능적인 초기 상태 설정
-  console.log('🔄 현재 상태 확인:', {
-    helpCode: helpCode.value,
-    isWebSocketConnected: isWebSocketConnected.value,
-    isGuardianConnected: helpCodeStore.isGuardianConnected
-  })
-  
-  // WebSocket이 이미 연결되어 있고 보호자도 연결된 상태라면 초기화하지 않음
-  if (helpCode.value && isWebSocketConnected.value && client?.connected && helpCodeStore.isGuardianConnected) {
-    console.log('✅ 이미 연결된 상태 - 초기화 건너뛰기')
-    // 상태 유지, 추가 확인 불필요
-  } else {
-    // 연결 상태가 불확실한 경우에만 초기화 및 확인
-    console.log('🔄 연결 상태 불확실 - 초기화 후 확인')
-    helpCodeStore.setGuardianConnected(false)
-    
-    if (helpCode.value) {
-      helpCodeStore.setCheckingConnection(true)
+    if (messages[serviceType]) {
+      tts.speak('SERVICE_GUIDE', messages[serviceType]);
     }
   }
-  
-  if (helpCode.value) {
-    console.log('🔄 기존 코드 감지:', helpCode.value)
-  }
-  
-  // 기존 코드가 있다면 연결 상태 복원 (필요한 경우에만)
-  if (helpCode.value && !helpCodeStore.isGuardianConnected) {
-    console.log('🔄 기존 코드 감지, 연결 상태 복원 시작:', helpCode.value)
-    
-    // 즉시 상태 확인 시도 (WebSocket이 이미 연결되어 있을 수 있음)
-    if (isWebSocketConnected.value && client && client.connected) {
-      console.log('✅ WebSocket 이미 연결됨 - 즉시 상태 확인')
-      setTimeout(() => {
-        checkGuardianConnectionStatus()
-      }, 100) // 즉시 확인
-    } else {
-      // WebSocket 재연결을 안전하게 시도
-      const attemptReconnection = () => {
-        if (!isWebSocketConnected.value) {
-          console.log('🔗 WebSocket 재연결 시도')
-          try {
-            connectWebSocket(helpCode.value)
-            
-            // 연결 완료 후 보호자 상태 확인
-            setTimeout(() => {
-              checkGuardianConnectionStatus()
-            }, 600)
-            
-          } catch (error) {
-            console.error('❌ WebSocket 재연결 실패:', error)
-          }
-        } else {
-          console.log('✅ WebSocket 재연결 완료 - 상태 확인')
-          setTimeout(() => {
-            checkGuardianConnectionStatus()
-          }, 200)
-        }
-      }
-      
-      // 300ms 후 재연결 시도
-      setTimeout(attemptReconnection, 300)
-    }
-  } else if (helpCode.value && helpCodeStore.isGuardianConnected) {
-    console.log('✅ 이미 보호자 연결된 상태 - 추가 확인 불필요')
-  }
-  
-  // WebRTC 인스턴스 초기화를 위한 함수
-  const initializeWebRTCIfReady = () => {
-    if (helpCode.value && client) {
-      console.log('🔧 WebRTC 인스턴스 초기화:', helpCode.value)
-      const webrtcInstance = screenShareStore.initializeWebRTC(helpCode.value, client)
-      
-      // localVideo ref 연결
-      if (webrtcInstance && webrtcInstance.localVideo) {
-        webrtcInstance.localVideo.value = localVideo.value
-      }
-      
-      // WebRTC 시그널링 설정
-      setTimeout(() => {
-        setupWebRTCSignaling(webrtcInstance);
-      }, 1000);
-    } else {
-      console.log('⏳ WebRTC 초기화 대기 중... (helpCode:', helpCode.value, ', client:', !!client, ')')
-      // 1초 후 재시도
-      setTimeout(initializeWebRTCIfReady, 1000);
-    }
-  }
-  
-  initializeWebRTCIfReady()
-})
+};
 
-// ---------- 마운트 시: 사용자 정보 조회 & 보호자번호 모달 ----------
-onMounted(async () => {
-  try {
-    console.log('🔍 /api/me API 호출 시작...');
-    const { data } = await api.get('/me');
-    console.log('📊 /api/me 응답 데이터:', data);
-    
-    if (data?.isSuccess) {
-      me.value = data.result;
-      console.log('✅ 사용자 정보 로드 성공:', me.value);
-      console.log('👤 사용자 이름:', me.value?.username);
-      console.log('📱 전화번호:', me.value?.phoneNumber);
-      console.log('🛡️ 보호자 전화번호:', me.value?.guardianPhone);
-      
-      if (!me.value?.guardianPhone) {
-        console.log('⚠️ 보호자 전화번호가 없어서 모달 표시');
-        showGuardianModal.value = true;
-      }
-    } else {
-      console.warn('❌ /me 실패:', data?.message);
-    }
-  } catch (e) {
-    console.error('❌ /api/me API 호출 에러:', e);
-    console.error('📊 에러 응답:', e?.response?.data);
-    console.error('🔢 상태 코드:', e?.response?.status);
-    
-    if (e?.response?.status === 401) {
-      console.log('🔐 인증 실패 - 로그인 페이지로 이동');
-      router.replace('/login');
-    } else {
-      console.error('💥 예상치 못한 에러:', e);
-    }
-  }
-});
-
-// ---------- 보호자 번호 저장 ----------
+// 보호자 번호 저장 관련 함수들
 function skipGuardian() {
   showGuardianModal.value = false;
 }
@@ -944,25 +774,198 @@ function handleGuardianSaved(phone) {
   me.value = { ...(me.value || {}), guardianPhone: phone };
   showGuardianModal.value = false;
 }
-// 로그인 
-function goLogin() {
-  router.push({ name: 'login' });
-}
 
-// 로그아웃(내 서비스 로그아웃 + 카카오 로그아웃)
-async function kakaoHardLogout() {
-  try {
-    try { await unregisterPushNotifications(); } catch {}
-    await auth.logout(); // 서버 RT 폐기 + 쿠키 삭제 + 프론트 토큰 비움
+// Watch 함수들 - 중복 제거됨
 
-    const url = new URL('https://kauth.kakao.com/oauth/logout');
-    url.searchParams.set('client_id', KAKAO_CLIENT_ID);
-    url.searchParams.set('logout_redirect_uri', LOGOUT_REDIRECT_URI);
-    window.location.href = url.toString();
-  } catch (e) {
-    console.error('[kakaoHardLogout] error:', e);
+// 보호자 메시지 감지 (단일)
+watch(guardianMessage, (newMessage) => {
+  if (newMessage && newMessage.trim()) {
+    // 보호자 연결 신호인지 확인
+    if (newMessage === 'GUARDIAN_CONNECTED') {
+      helpCodeStore.setGuardianConnected(true);
+
+      // 🎵 보호자 연결 시 음성 안내
+      if (tts) {
+        tts.speak('SYSTEM', 'GUARDIAN_CONNECTED');
+      }
+
+      if (client && client.connected && helpCode.value) {
+        setTimeout(() => {
+          client.publish({
+            destination: `/app/message/${helpCode.value}`,
+            body: 'USER_CONNECTION_CONFIRMED',
+          });
+        }, 100);
+      }
+    } else if (newMessage === 'GUARDIAN_DISCONNECTED') {
+      helpCodeStore.setGuardianConnected(false);
+
+      // 🎵 보호자 연결 해제 시 음성 안내
+      if (tts) {
+        tts.speak('SYSTEM', 'GUARDIAN_DISCONNECTED');
+      }
+    } else if (newMessage === 'GUARDIAN_CONNECTION_ALIVE') {
+      helpCodeStore.setGuardianConnected(true);
+
+      if (window.guardianCheckTimeout) {
+        clearTimeout(window.guardianCheckTimeout);
+        window.guardianCheckTimeout = null;
+      }
+    } else {
+      if (
+        newMessage.trim() &&
+        !newMessage.startsWith('SYSTEM_') &&
+        !newMessage.startsWith('ERROR_') &&
+        !newMessage.startsWith('USER_CONNECTION') &&
+        newMessage !== 'ping' &&
+        newMessage !== 'pong'
+      ) {
+        helpCodeStore.setGuardianConnected(true);
+      }
+    }
   }
-}
+});
+
+// 코드 변경 감지하여 웹소켓 재연결
+watch(
+  helpCode,
+  (newCode, oldCode) => {
+    if (newCode && newCode !== oldCode) {
+      disconnectWebSocket();
+      helpCodeStore.setGuardianConnected(false);
+
+      if (screenShareStore.helpCode !== newCode) {
+        screenShareStore.initializeWebRTC(newCode, client);
+      }
+
+      setTimeout(() => {
+        connectWebSocket(newCode);
+        setupWebRTCSignaling();
+      }, 500);
+    }
+  },
+  { immediate: true }
+);
+
+// WebSocket 연결 상태 감지
+watch(isWebSocketConnected, (newConnected, oldConnected) => {
+  if (
+    newConnected &&
+    !oldConnected &&
+    helpCode.value &&
+    !helpCodeStore.isGuardianConnected
+  ) {
+    setTimeout(() => {
+      checkGuardianConnectionStatus();
+    }, 200);
+  }
+});
+
+// 마운트 시 초기화 (단일 onMounted)
+onMounted(async () => {
+  // 소개 표시 여부 확인
+  const introShown = localStorage.getItem('intro_shown');
+  if (introShown) {
+    showIntro.value = false;
+  }
+
+  // 🎵 TTS 초기화 및 환영 메시지 시퀀스 (음성 겹침 방지)
+  if (tts) {
+    const isFirstVisit = !localStorage.getItem('visited_before');
+
+    if (isFirstVisit) {
+      localStorage.setItem('visited_before', 'true');
+
+      // 첫 방문자용 간단한 환영 메시지만
+      setTimeout(() => {
+        tts.speak('MAIN_INTRO', 'WELCOME_FIRST_TIME');
+      }, 1000);
+
+      // 도움 요청 기능 안내 (8초 후)
+      setTimeout(() => {
+        tts.speak('HELP_GUIDE', 'GUARDIAN_HELP_INTRO');
+      }, 8000);
+    } else {
+      // 재방문자용 짧은 환영 메시지
+      setTimeout(() => {
+        tts.speak('MAIN_INTRO', 'WELCOME_BACK_SHORT');
+      }, 1000);
+    }
+
+    // 시간 기반 경고는 15초 후에만 (겹침 방지)
+    setTimeout(() => {
+      tts.checkTimeBasedWarnings();
+    }, 15000);
+  }
+
+  // WebRTC 인스턴스 초기화
+  const initializeWebRTCIfReady = () => {
+    if (helpCode.value && client) {
+      const webrtcInstance = screenShareStore.initializeWebRTC(
+        helpCode.value,
+        client
+      );
+
+      if (webrtcInstance && webrtcInstance.localVideo) {
+        webrtcInstance.localVideo.value = localVideo.value;
+      }
+
+      setTimeout(() => {
+        setupWebRTCSignaling(webrtcInstance);
+      }, 1000);
+    } else {
+      setTimeout(initializeWebRTCIfReady, 1000);
+    }
+  };
+
+  // 사용자 정보 조회 & 보호자번호 모달
+  try {
+    const { data } = await api.get('/me');
+    if (data?.isSuccess) {
+      me.value = data.result;
+      if (!me.value?.guardianPhone) {
+        showGuardianModal.value = true;
+      }
+    }
+  } catch (e) {
+    if (e?.response?.status === 401) {
+      router.replace('/login');
+    } else {
+      console.error('/me 에러:', e);
+    }
+  }
+
+  // 기존 코드가 있다면 연결 상태 복원
+  if (helpCode.value && !helpCodeStore.isGuardianConnected) {
+    if (isWebSocketConnected.value && client && client.connected) {
+      setTimeout(() => {
+        checkGuardianConnectionStatus();
+      }, 100);
+    } else {
+      const attemptReconnection = () => {
+        if (!isWebSocketConnected.value) {
+          try {
+            connectWebSocket(helpCode.value);
+            setTimeout(() => {
+              checkGuardianConnectionStatus();
+            }, 600);
+          } catch (error) {
+            console.error('❌ WebSocket 재연결 실패:', error);
+          }
+        } else {
+          setTimeout(() => {
+            checkGuardianConnectionStatus();
+          }, 200);
+        }
+      };
+
+      setTimeout(attemptReconnection, 300);
+    }
+  }
+
+  // WebRTC 초기화 시작
+  initializeWebRTCIfReady();
+});
 </script>
 
 <style scoped>
@@ -1522,8 +1525,13 @@ async function kakaoHardLogout() {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .code-instruction {
@@ -2039,7 +2047,7 @@ async function kakaoHardLogout() {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   /* 화면 공유 버튼 스타일 */
   .action-btn.screen-share {
     background: var(--kb-blue);
@@ -2050,31 +2058,31 @@ async function kakaoHardLogout() {
     gap: 8px;
     justify-content: center;
   }
-  
+
   .action-btn.screen-share:hover {
     background: var(--kb-blue-dark);
     border-color: var(--kb-blue-dark);
   }
-  
+
   .action-btn.screen-share.sharing {
     background: var(--kb-danger);
     border-color: var(--kb-danger);
   }
-  
+
   .action-btn.screen-share.sharing:hover {
     background: #d32f2f;
     border-color: #d32f2f;
   }
-  
+
   .btn-icon {
     font-size: 16px;
   }
-  
+
   .btn-text {
     font-size: 14px;
     font-weight: 600;
   }
-  
+
   .code-text {
     font-size: 24px;
     letter-spacing: 2px;
@@ -2148,26 +2156,24 @@ async function kakaoHardLogout() {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-
 .mode-toggle-btn.login-btn {
-  background: var(--success);        /*로그인 */
+  background: var(--success); /*로그인 */
   color: var(--white);
 }
 .mode-toggle-btn.login-btn:hover {
-  background: #2e7d32;               /* hover용 진한 초록 */
+  background: #2e7d32; /* hover용 진한 초록 */
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
 /* 로그아웃(빨강) 변형 */
 .mode-toggle-btn.logout-btn {
-  background: var(--danger);         /* 로그아웃 */
+  background: var(--danger); /* 로그아웃 */
   color: var(--white);
 }
 .mode-toggle-btn.logout-btn:hover {
-  background: #b91c1c;               /* hover용 진한 빨강 */
+  background: #b91c1c; /* hover용 진한 빨강 */
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
-
 </style>
