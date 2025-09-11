@@ -3,25 +3,15 @@
 
 <template>
   <div class="tts-controller">
-    <!-- TTS 토글 버튼 -->
+    <!-- 설정 버튼 (위쪽에 위치) -->
     <button
-      @click="tts.toggle()"
-      :class="['tts-toggle-btn', { active: tts.isEnabled.value }]"
-      :title="tts.isEnabled.value ? 'TTS 끄기' : 'TTS 켜기'"
+      @click="showSettings = !showSettings"
+      class="settings-btn"
+      title="TTS 설정"
+      v-if="tts.isEnabled.value"
     >
-      <span class="tts-icon">{{ tts.isEnabled.value ? '🔊' : '🔇' }}</span>
+      ⚙️
     </button>
-
-    <!-- TTS 상태 표시 (읽는 중일 때만) -->
-    <div v-if="tts.isReading.value" class="tts-status">
-      <div class="reading-indicator">
-        <span class="reading-dot"></span>
-        <span class="reading-text">음성 안내 중</span>
-      </div>
-
-      <!-- 중지 버튼 -->
-      <button @click="tts.stop()" class="stop-btn" title="음성 중지">⏹️</button>
-    </div>
 
     <!-- TTS 설정 패널 (확장 가능) -->
     <div v-if="showSettings" class="tts-settings">
@@ -45,14 +35,24 @@
       <button @click="testTTS" class="test-btn">음성 테스트</button>
     </div>
 
-    <!-- 설정 버튼 -->
+    <!-- TTS 상태 표시 (읽는 중일 때만) -->
+    <div v-if="tts.isReading.value" class="tts-status">
+      <div class="reading-indicator">
+        <span class="reading-dot"></span>
+        <span class="reading-text">음성 안내 중</span>
+      </div>
+
+      <!-- 중지 버튼 -->
+      <button @click="tts.stop()" class="stop-btn" title="음성 중지">⏹️</button>
+    </div>
+
+    <!-- TTS 토글 버튼 (맨 아래) -->
     <button
-      @click="showSettings = !showSettings"
-      class="settings-btn"
-      title="TTS 설정"
-      v-if="tts.isEnabled.value"
+      @click="tts.toggle()"
+      :class="['tts-toggle-btn', { active: tts.isEnabled.value }]"
+      :title="tts.isEnabled.value ? 'TTS 끄기' : 'TTS 켜기'"
     >
-      ⚙️
+      <span class="tts-icon">{{ tts.isEnabled.value ? '🔊' : '🔇' }}</span>
     </button>
   </div>
 </template>
@@ -80,24 +80,25 @@ const testTTS = () => {
 <style scoped>
 .tts-controller {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 9999;
+  bottom: 100px; /* FloatingChat 위에 위치 (FloatingChat은 30px) */
+  right: 30px; /* FloatingChat과 같은 위치 */
+  z-index: 1001; /* FloatingChat(1000)보다 위에 */
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* TTS 토글 버튼 */
 .tts-toggle-btn {
-  width: 48px;
-  height: 48px;
+  width: 60px; /* FloatingChat과 같은 크기 */
+  height: 60px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.9);
+  background: #FFBC00; /* FloatingChat과 같은 색상 */
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 188, 0, 0.4); /* FloatingChat과 같은 그림자 */
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -106,17 +107,18 @@ const testTTS = () => {
 }
 
 .tts-toggle-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1); /* FloatingChat과 같은 호버 효과 */
+  box-shadow: 0 6px 25px rgba(255, 188, 0, 0.6);
 }
 
 .tts-toggle-btn.active {
-  background: #4caf50;
+  background: #e6a600; /* 더 진한 노란색 */
   color: white;
 }
 
 .tts-icon {
-  font-size: 20px;
+  font-size: 24px; /* FloatingChat과 같은 아이콘 크기 */
+  color: white;
 }
 
 /* TTS 상태 표시 */
@@ -182,7 +184,8 @@ const testTTS = () => {
   padding: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   min-width: 200px;
-  margin-top: 8px;
+  margin-bottom: 8px; /* 위쪽에 위치하므로 margin-top 대신 margin-bottom 사용 */
+  order: -1; /* 설정 버튼 바로 아래에 위치하도록 */
 }
 
 .tts-settings h4 {
@@ -227,41 +230,73 @@ const testTTS = () => {
 }
 
 .settings-btn {
-  width: 32px;
-  height: 32px;
+  width: 48px; /* 크기 증가 */
+  height: 48px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
+  font-size: 18px; /* 아이콘 크기 증가 */
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .settings-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.1); /* FloatingChat과 같은 호버 효과 */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 1);
 }
 
 /* 모바일 대응 */
 @media (max-width: 768px) {
   .tts-controller {
-    top: 10px;
-    right: 10px;
+    bottom: 90px; /* 모바일에서 FloatingChat 위에 위치 */
+    right: 24px; /* FloatingChat과 같은 위치 */
   }
 
   .tts-toggle-btn {
-    width: 40px;
-    height: 40px;
+    width: 56px; /* FloatingChat과 같은 크기 */
+    height: 56px;
   }
 
   .tts-icon {
-    font-size: 18px;
+    font-size: 22px; /* FloatingChat과 같은 아이콘 크기 */
   }
 
   .tts-settings {
     min-width: 180px;
+  }
+
+  .settings-btn {
+    width: 44px; /* 모바일에서 약간 작게 */
+    height: 44px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tts-controller {
+    bottom: 80px; /* 작은 화면에서 FloatingChat 위에 위치 */
+    right: 20px; /* FloatingChat과 같은 위치 */
+  }
+
+  .tts-toggle-btn {
+    width: 56px;
+    height: 56px;
+  }
+
+  .tts-icon {
+    font-size: 22px;
+  }
+
+  .settings-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
   }
 }
 </style>
