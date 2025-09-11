@@ -4,7 +4,7 @@
     <nav class="navbar">
       <div class="nav-content">
         <div class="logo" v-tts:MAIN_INTRO.hover="'SERVICE_OVERVIEW'">
-          <span class="logo-text">KB 금융 도우미</span>
+          <img src="/images/login/logo.png" alt="금융 도우미" class="logo-image" />
         </div>
         <div class="nav-actions">
       <!-- 로그인 안됨: 카카오 로그인 버튼 -->
@@ -37,7 +37,6 @@
 
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
-      <h2 v-tts:ONBOARDING.auto="'WELCOME_BACK'">도움이 필요하세요?</h2>
       <!-- 환영 메시지 -->
       <div class="welcome-section">
         <div
@@ -54,7 +53,7 @@
             <!-- 헤더 섹션 -->
             <div class="help-header">
               <div class="help-title-section">
-                <h3>전문가 도움 요청</h3>
+                <h3 v-tts:ONBOARDING.auto="'WELCOME_BACK'">도움이 필요하세요?</h3>
                 <p>6자리 코드로 실시간 상담 연결</p>
               </div>
             </div>
@@ -1142,11 +1141,11 @@ async function kakaoHardLogout() {
   color: var(--kb-yellow-positive);
 }
 
-.logo-text {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--kb-gray);
-  letter-spacing: -0.5px;
+.logo-image {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  max-width: 200px;
 }
 
 .nav-actions {
