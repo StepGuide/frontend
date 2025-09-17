@@ -33,17 +33,6 @@
           </div>
         </div>
         
-        <!-- 디버깅 정보 (개발용) -->
-        <div v-if="true" class="debug-info" style="font-size: 10px; color: #999; margin-top: 10px;">
-          <div>URL 코드: {{ route.query.code }}</div>
-          <div>Store 코드: {{ helpCodeStore.generatedCode }}</div>
-          <div>사용 중인 코드: {{ helpCode }}</div>
-          <div>연결 상태: {{ isWebSocketConnected }}</div>
-          <div>연결 비활성화: {{ helpCodeStore.isConnectionDisabled }}</div>
-          <div>채팅창 열림: {{ isChatOpen }}</div>
-          <div>메시지 개수: {{ messageHistory.length }}</div>
-          <div>최신 메시지: "{{ guardianMessage }}"</div>
-        </div>
       </div>
     </div>
   </div>
@@ -100,6 +89,20 @@ const formatTime = (date) => {
 // 보호자 메시지 감지
 watch(guardianMessage, (newMessage) => {
   if (newMessage && newMessage.trim()) {
+    // 시스템 메시지 필터링 (채팅창에 표시하지 않음)
+    const systemMessages = [
+      'GUARDIAN_CONNECTED',
+      'GUARDIAN_DISCONNECTED', 
+      'USER_CONNECTION_CONFIRMED',
+      'USER_CONNECTION_CHECK',
+      'GUARDIAN_CONNECTION_ALIVE'
+    ]
+    
+    if (systemMessages.includes(newMessage)) {
+      console.log('📨 시스템 메시지 수신 (채팅창에 표시 안함):', newMessage)
+      return // 채팅창에 표시하지 않음
+    }
+    
     hasNewMessage.value = true
     console.log('📨 보호자 메시지 수신:', newMessage)
     
@@ -170,30 +173,37 @@ watch(helpCode, (newCode, oldCode) => {
     // 코드가 null이 되면 연결 종료 처리
     console.log('🔌 FloatingChat 코드가 null이 됨 - 연결 종료 처리')
     
-    // 웹소켓 연결 해제
-    disconnectWebSocket()
-    
-    // 연결 종료 안내 메시지 추가
-    const systemMessage = {
-      content: '보호자와 연결이 종료되었습니다.',
-      timestamp: new Date(),
-      isSystemMessage: true
+    // 웹소켓이 실제로 연결되어 있었을 때만 종료 메시지 표시
+    if (isWebSocketConnected.value) {
+      // 웹소켓 연결 해제
+      disconnectWebSocket()
+      
+      // 연결 종료 안내 메시지 추가
+      const systemMessage = {
+        content: '보호자와 연결이 종료되었습니다.',
+        timestamp: new Date(),
+        isSystemMessage: true
+      }
+      messageHistory.value.push(systemMessage)
+      console.log('🔌 시스템 메시지 추가됨:', systemMessage)
+      
+      // 채팅창이 열려있지 않으면 열기
+      if (!isChatOpen.value) {
+        isChatOpen.value = true
+        console.log('🔌 채팅창 자동 열림')
+      }
+      
+      // 5초 후 채팅창 닫기
+      setTimeout(() => {
+        isChatOpen.value = false
+        hasNewMessage.value = false
+        console.log('🔌 5초 후 채팅창 자동 닫힘')
+      }, 5000)
+    } else {
+      // 웹소켓이 연결되지 않았던 경우 단순히 연결 해제만
+      disconnectWebSocket()
+      console.log('🔌 웹소켓이 연결되지 않았으므로 종료 메시지 표시 안함')
     }
-    messageHistory.value.push(systemMessage)
-    console.log('🔌 시스템 메시지 추가됨:', systemMessage)
-    
-    // 채팅창이 열려있지 않으면 열기
-    if (!isChatOpen.value) {
-      isChatOpen.value = true
-      console.log('🔌 채팅창 자동 열림')
-    }
-    
-    // 5초 후 채팅창 닫기
-    setTimeout(() => {
-      isChatOpen.value = false
-      hasNewMessage.value = false
-      console.log('🔌 5초 후 채팅창 자동 닫힘')
-    }, 5000)
   }
 }, { immediate: true })
 

@@ -90,17 +90,40 @@ const nextStep = async () => {
 const prevStep = () => store.prevStep();
 
 const confirmTransfer = async () => {
-  try {
-    // await calculateAnomaly()
+  // 비밀번호 모달 열기
+  showPasswordModal.value = true;
+  password.value = '';
+  
+  // 모달이 열린 후 입력 필드에 포커스
+  setTimeout(() => {
+    if (passwordInput.value) {
+      passwordInput.value.focus();
+    }
+  }, 100);
+};
 
-    // if (isFraudHighRisk.value) {
-    //   alert('위험 거래로 인해 이체가 제한됩니다.')
-    //   return
-    // }
-    // if (anomalyLevel.value === 'high') {
-    //   alert('이상징후 점수가 높아 이체가 제한됩니다.')
-    //   return
-    // }
+// 비밀번호 입력 처리
+const onPasswordInput = (event) => {
+  const value = event.target.value.replace(/\D/g, ''); // 숫자만 허용
+  password.value = value;
+  event.target.value = value;
+  
+  // 4자리 입력 완료 시 자동으로 확인
+  if (value.length === 4) {
+    setTimeout(() => {
+      confirmPassword();
+    }, 300);
+  }
+};
+
+// 비밀번호 확인
+const confirmPassword = async () => {
+  if (password.value.length !== 4) {
+    alert('4자리 비밀번호를 입력해주세요.');
+    return;
+  }
+
+  try {
     // 사기 계좌이거나 점수가 50점 이상이면 지연 이체
     if (isFraudHighRisk.value || anomalyLevel.value === 'high') {
       sendGuardianAlert();
@@ -111,10 +134,17 @@ const confirmTransfer = async () => {
 
     const res = await store.execute();
     alert(res || '이체 완료!');
+    closePasswordModal();
     router.push('/');
   } catch (err) {
     alert('이체 실패: ' + err.message);
   }
+};
+
+// 비밀번호 모달 닫기
+const closePasswordModal = () => {
+  showPasswordModal.value = false;
+  password.value = '';
 };
 
 const goBack = () => router.push('/');
@@ -191,6 +221,11 @@ const showScoreDetails = ref(false);
 const showScoreModal = ref(false);
 const fraudCheckMessage = ref('');
 const isFraudHighRisk = ref(false);
+
+// 비밀번호 모달 관련
+const showPasswordModal = ref(false);
+const password = ref('');
+const passwordInput = ref(null);
 
 const anomalyLevel = computed(() => {
   const score = anomalyScore?.value?.result?.totalScore ?? null;
@@ -892,6 +927,51 @@ onMounted(async () => {
           <button class="btn-primary" @click="showScoreModal = false">
             확인
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 비밀번호 입력 모달 -->
+    <div v-if="showPasswordModal" class="password-modal-overlay" @click="closePasswordModal">
+      <div class="password-modal" @click.stop>
+        <div class="password-modal-header">
+          <h3 class="password-modal-title">비밀번호 입력</h3>
+          <button class="password-modal-close" @click="closePasswordModal">×</button>
+        </div>
+        <div class="password-modal-content">
+          <div class="password-input-container">
+            <div class="password-label">계좌 비밀번호를 입력해주세요</div>
+            <div class="password-input-wrapper">
+              <input 
+                v-model="password" 
+                type="password" 
+                class="password-input"
+                placeholder="4자리 숫자"
+                maxlength="4"
+                @input="onPasswordInput"
+                ref="passwordInput"
+              />
+              <div class="password-dots">
+                <span 
+                  v-for="i in 4" 
+                  :key="i" 
+                  class="password-dot"
+                  :class="{ 'filled': password.length >= i }"
+                ></span>
+              </div>
+            </div>
+          </div>
+          <div class="password-modal-actions">
+            <button class="password-cancel-btn" @click="closePasswordModal">취소</button>
+            <button 
+              class="password-confirm-btn" 
+              :class="{ 'disabled': password.length !== 4 }"
+              :disabled="password.length !== 4"
+              @click="confirmPassword"
+            >
+              확인
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2281,5 +2361,269 @@ onMounted(async () => {
 .transfer-item:hover .star-icon {
   color: var(--primary-dark);
   transform: scale(1.1);
+}
+
+/* 비밀번호 모달 스타일 - 토스 스타일 */
+.password-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.password-modal {
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  width: 100%;
+  animation: slideUp 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.password-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.password-modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: -0.3px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.password-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-modal-close:hover {
+  background: var(--gray-200);
+  color: var(--gray-800);
+  transform: scale(1.05);
+}
+
+.password-modal-content {
+  padding: 24px;
+}
+
+.password-input-container {
+  margin-bottom: 32px;
+}
+
+.password-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 16px;
+  text-align: center;
+  letter-spacing: -0.2px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.password-input {
+  width: 100%;
+  height: 60px;
+  border: 2px solid var(--gray-200);
+  border-radius: 16px;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 12px;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  transition: all 0.3s ease;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  outline: none;
+  -webkit-text-security: disc;
+  -moz-text-security: disc;
+  text-security: disc;
+}
+
+.password-input:focus {
+  border-color: var(--kb-yellow-positive);
+  background: var(--white);
+  box-shadow: 0 0 0 4px rgba(255, 188, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.password-input::placeholder {
+  color: var(--gray-400);
+  letter-spacing: 4px;
+  font-size: 18px;
+}
+
+.password-dots {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.password-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  transition: all 0.3s ease;
+  border: 2px solid var(--gray-200);
+}
+
+.password-dot.filled {
+  background: var(--kb-yellow-positive);
+  border-color: var(--kb-yellow-positive);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(255, 188, 0, 0.3);
+}
+
+.password-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.password-cancel-btn,
+.password-confirm-btn {
+  padding: 16px 32px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  min-width: 120px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  letter-spacing: -0.2px;
+}
+
+.password-cancel-btn {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 2px solid var(--gray-200);
+}
+
+.password-cancel-btn:hover {
+  background: var(--gray-200);
+  color: var(--gray-800);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.password-confirm-btn {
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, #e6a600 100%);
+  color: var(--white);
+  box-shadow: 0 4px 12px rgba(255, 188, 0, 0.3);
+  border: 2px solid var(--kb-yellow-positive);
+}
+
+.password-confirm-btn:hover:not(.disabled) {
+  background: linear-gradient(135deg, #e6a600 0%, #cc9500 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 188, 0, 0.4);
+}
+
+.password-confirm-btn.disabled {
+  background: var(--gray-300);
+  color: var(--gray-500);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  border-color: var(--gray-300);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 480px) {
+  .password-modal {
+    margin: 20px;
+    max-width: calc(100% - 40px);
+  }
+  
+  .password-modal-header {
+    padding: 20px 20px 12px 20px;
+  }
+  
+  .password-modal-content {
+    padding: 20px;
+  }
+  
+  .password-input {
+    height: 50px;
+    font-size: 20px;
+    letter-spacing: 8px;
+  }
+  
+  .password-dots {
+    gap: 10px;
+  }
+  
+  .password-dot {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .password-modal-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .password-cancel-btn,
+  .password-confirm-btn {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 15px;
+  }
 }
 </style>

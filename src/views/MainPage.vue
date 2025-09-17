@@ -4,7 +4,8 @@
     <nav class="navbar">
       <div class="nav-content">
         <div class="logo" v-tts:MAIN_INTRO.hover="'SERVICE_OVERVIEW'">
-          <span class="logo-text">KB 금융 도우미</span>
+          <img src="/images/login/circle_logo.png" alt="금융 도우미" class="logo-image" />
+          <span class="logo-text">친절한 은행씨</span>
         </div>
         <div class="nav-actions">
       <!-- 로그인 안됨: 카카오 로그인 버튼 -->
@@ -37,7 +38,6 @@
 
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
-      <h2 v-tts:ONBOARDING.auto="'WELCOME_BACK'">도움이 필요하세요?</h2>
       <!-- 환영 메시지 -->
       <div class="welcome-section">
         <div
@@ -54,7 +54,7 @@
             <!-- 헤더 섹션 -->
             <div class="help-header">
               <div class="help-title-section">
-                <h3>전문가 도움 요청</h3>
+                <h3 v-tts:ONBOARDING.auto="'WELCOME_BACK'">도움이 필요하세요?</h3>
                 <p>6자리 코드로 실시간 상담 연결</p>
               </div>
             </div>
@@ -144,19 +144,6 @@
                   <span>이 코드를 보호자에게 알려주세요</span>
                 </div>
 
-                <!-- 디버깅 정보 -->
-                <div
-                  class="debug-info"
-                  style="font-size: 10px; color: #999; margin-top: 10px"
-                >
-                  <div>보호자 연결됨: {{ isGuardianConnected }}</div>
-                  <div>
-                    연결 해제 신호: {{ helpCodeStore.connectionTerminated }}
-                  </div>
-                  <div>코드: {{ helpCode }}</div>
-                  <div>화면 공유 중: {{ isSharing }}</div>
-                  <div>WebRTC 연결됨: {{ isSharing }}</div>
-                </div>
               </div>
 
               <div class="action-buttons">
@@ -200,6 +187,9 @@
 
       <!-- 계좌 정보 -->
       <div class="account-overview">
+        <div class="section-header">
+          <h2 v-tts:SERVICE_GUIDE.hover="'ACCOUNT_INFO'">내 계좌 현황</h2>
+        </div>
         <div class="account-grid">
           <div
             class="account-card primary"
@@ -211,7 +201,7 @@
                 :alt="primaryBankInfo.name"
                 class="card-icon"
               />
-              <div class="card-title">KB국민은행</div>
+              <div class="card-title">{{ primaryBankInfo.name }}</div>
             </div>
             <div class="balance-info">
               <div class="balance-label">총 잔액</div>
@@ -236,6 +226,13 @@
           <div class="account-card secondary">
             <div class="card-header">
                <div class="card-title">최근 거래</div>
+               <button
+                 class="inquiry-btn"
+                 @click="goToInquiry"
+                 v-tts:SERVICE_GUIDE.focus="'ACCOUNT_INFO'"
+               >
+                 조회
+               </button>
             </div>
             <div class="transaction-list">
               <div
@@ -251,17 +248,6 @@
                   {{ t.amount > 0 ? '+' : '-' }}₩ {{ formatNumber(Math.abs(t.amount)) }}
                 </span>
               </div>
-            </div>
-            <div class="practice-guide-wrapper">
-              <button
-                  class="action-btn"
-                  :class="{ 'practice-guide-highlight': showInquiryPracticeGuide }"
-                  @click="goToInquiry"
-                  v-tts:SERVICE_GUIDE.focus="'ACCOUNT_INFO'"
-                >
-                  조회
-                </button>
-              <div v-if="showInquiryPracticeGuide" class="practice-guide-bubble">이 버튼을 눌러 ‘조회 연습’을 시작하세요</div>
             </div>
           </div>
         </div>
@@ -1270,7 +1256,7 @@ async function kakaoHardLogout() {
 .nav-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 12px 20px;
+  padding: 8px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1287,11 +1273,24 @@ async function kakaoHardLogout() {
   color: var(--kb-yellow-positive);
 }
 
+.logo-image {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  max-width: 160px;
+}
+
 .logo-text {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--kb-gray);
-  letter-spacing: -0.5px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #FEC936;
+  margin-left: 8px;
+  letter-spacing: 0.5px;
+  font-family: 'Noto Sans KR', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .nav-actions {
@@ -1324,15 +1323,15 @@ async function kakaoHardLogout() {
   background: var(--kb-yellow-positive);
   color: var(--white);
   border: none;
-  padding: 12px 20px;
+  padding: 6px 12px;
   border-radius: var(--radius-xl);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   box-shadow: var(--shadow);
 }
 
@@ -1361,14 +1360,14 @@ async function kakaoHardLogout() {
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 12px;
+  padding: 8px;
 }
 
 /* 환영 섹션 */
 .welcome-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
@@ -1376,12 +1375,12 @@ async function kakaoHardLogout() {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 20px 0;
+  padding: 12px 0;
 }
 
 .welcome-title {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: 900;
   margin-bottom: 4px;
   color: var(--kb-gray);
   letter-spacing: -1px;
@@ -1389,23 +1388,24 @@ async function kakaoHardLogout() {
 }
 
 .welcome-subtitle {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--kb-dark-gray);
   line-height: 1.6;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 /* 도움 요청 카드 - KB국민은행 스타일 */
 .help-request-card {
-  background: var(--white);
-  border-radius: 12px;
+  background: linear-gradient(135deg, var(--white) 0%, #fafafa 100%);
+  border-radius: 16px;
   padding: 0;
   color: var(--gray-800);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   position: relative;
   overflow: hidden;
-  min-height: 180px;
+  min-height: 160px;
   transition: all 0.3s ease;
+  border: 1px solid rgba(255, 188, 0, 0.1);
 }
 
 .help-request-card::before {
@@ -1413,7 +1413,7 @@ async function kakaoHardLogout() {
 }
 
 .help-content {
-  padding: 12px;
+  padding: 16px;
   position: relative;
   z-index: 1;
   height: 100%;
@@ -1425,8 +1425,8 @@ async function kakaoHardLogout() {
 .help-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
   padding-bottom: 0;
 }
 
@@ -1439,7 +1439,7 @@ async function kakaoHardLogout() {
 }
 
 .help-title-section h3 {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   margin: 0 0 1px 0;
   color: var(--gray-800);
@@ -1447,7 +1447,7 @@ async function kakaoHardLogout() {
 }
 
 .help-title-section p {
-  font-size: 12px;
+  font-size: 16px;
   margin: 0;
   color: var(--gray-600);
   font-weight: 500;
@@ -1456,55 +1456,68 @@ async function kakaoHardLogout() {
 /* 코드 생성 정보 */
 .generation-info {
   display: flex;
-  justify-content: space-around;
-  margin-bottom: 12px;
-  padding: 8px;
-  background: var(--gray-50);
-  border-radius: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .info-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 0;
+  position: relative;
+  padding: 0 12px;
+}
+
+.info-item:not(:last-child)::after {
+  content: '•';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  font-size: 14px;
 }
 
 .info-icon {
-  font-size: 16px;
-  background: var(--gray-100);
-  padding: 4px;
-  border-radius: 4px;
-  color: var(--gray-600);
+  display: none;
 }
 
 .info-text {
-  font-size: 10px;
-  color: var(--gray-600);
-  font-weight: 500;
+  font-size: 16px;
+  color: var(--gray-700);
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  text-align: center;
+  line-height: 1.3;
 }
 
 /* 도움 요청 버튼 */
 .help-request-btn {
-  background: #605850;
+  background: linear-gradient(135deg, #605850 0%, #4a433c 100%);
   color: var(--white);
   border: none;
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(96, 88, 80, 0.3);
   width: 100%;
-  min-height: 40px;
+  min-height: 48px;
   margin-top: auto;
 }
 
 .help-request-btn:hover:not(:disabled) {
-  background: #4a433c;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #4a433c 0%, #3a332c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(96, 88, 80, 0.4);
 }
 
 .help-request-btn:disabled {
@@ -1564,8 +1577,8 @@ async function kakaoHardLogout() {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 160px;
+  justify-content: center;
+  min-height: 100px;
   transition: all 0.3s ease;
 }
 
@@ -1574,8 +1587,8 @@ async function kakaoHardLogout() {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 160px;
+  justify-content: center;
+  min-height: 100px;
   transition: all 0.3s ease;
 }
 
@@ -1839,12 +1852,12 @@ async function kakaoHardLogout() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 12px;
   padding: 0;
 }
 
 .section-header h2 {
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--kb-gray);
   letter-spacing: -0.5px;
@@ -1854,15 +1867,15 @@ async function kakaoHardLogout() {
   background: #605850;
   color: #ffffff;
   border: 1px solid var(--kb-gray);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  padding: 12px 24px;
+  padding: 6px 12px;
   border-radius: var(--radius-xl);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
 .view-all-btn:hover {
@@ -1873,96 +1886,122 @@ async function kakaoHardLogout() {
 
 /* 계좌 정보 - TOSS 스타일 */
 .account-overview {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .account-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .account-card {
-  background: var(--white);
-  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, var(--white) 0%, #fafafa 100%);
+  border-radius: 20px;
   padding: 16px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .account-card:hover {
-  box-shadow: var(--shadow-xl);
-  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  transform: translateY(-6px);
 }
 
 .account-card.primary {
   background: linear-gradient(
     135deg,
     var(--white) 0%,
+    #fff8e1 50%,
     var(--primary-light) 100%
   );
+  border: 1px solid rgba(255, 188, 0, 0.2);
 }
 
 .account-card.secondary {
   background: linear-gradient(
     135deg,
     var(--white) 0%,
+    #f5f4f2 50%,
     var(--accent-light) 100%
   );
+  border: 1px solid rgba(96, 88, 80, 0.1);
 }
 
 .card-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .card-icon {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   border-radius: var(--radius-lg);
 }
 
 .card-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--kb-gray);
   letter-spacing: -0.3px;
 }
 
+.inquiry-btn {
+  background: #605850;
+  color: var(--white);
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.inquiry-btn:hover {
+  background: #4a433c;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
 .balance-info {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .balance-label {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--kb-dark-gray);
-  margin-bottom: 8px;
-  font-weight: 500;
+  margin-bottom: 6px;
+  font-weight: 800;
 }
 
 .balance-amount {
   font-size: 28px;
   font-weight: 700;
   color: var(--kb-yellow-positive);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   letter-spacing: -0.5px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     'Helvetica Neue', Arial, sans-serif;
 }
 
 .account-number {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--kb-gray);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     'Helvetica Neue', Arial, sans-serif;
   font-weight: 500;
   background: var(--accent-light);
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: var(--radius);
   display: inline-block;
   letter-spacing: 0.5px;
@@ -1970,35 +2009,37 @@ async function kakaoHardLogout() {
 
 .card-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .action-btn {
-  background: #605850;
+  background: linear-gradient(135deg, #605850 0%, #4a433c 100%);
   color: var(--white);
   border: none;
-  padding: 12px 20px;
-  border-radius: var(--radius-xl);
+  padding: 10px 16px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(96, 88, 80, 0.3);
   flex: 1;
 }
 
 .action-btn:hover {
-  background: #4a433c;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  background: linear-gradient(135deg, #4a433c 0%, #3a332c 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(96, 88, 80, 0.4);
 }
 
 .action-btn.transfer {
-  background: var(--kb-yellow-positive);
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, #e6a600 100%);
+  box-shadow: 0 4px 12px rgba(255, 188, 0, 0.3);
 }
 
 .action-btn.transfer:hover {
-  background: var(--primary-dark);
+  background: linear-gradient(135deg, #e6a600 0%, #cc9500 100%);
+  box-shadow: 0 6px 16px rgba(255, 188, 0, 0.4);
 }
 
 .transaction-list {
@@ -2011,10 +2052,10 @@ async function kakaoHardLogout() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 8px 12px;
   background: var(--white);
   border-radius: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
@@ -2028,14 +2069,14 @@ async function kakaoHardLogout() {
 .transaction-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
 }
 
 .transaction-type {
   font-size: 14px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: 8px;
   display: inline-block;
   width: fit-content;
@@ -2063,7 +2104,7 @@ async function kakaoHardLogout() {
 
 .transaction-amount {
   font-weight: 700;
-  font-size: 20px;
+  font-size: 18px;
   letter-spacing: -0.5px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     'Helvetica Neue', Arial, sans-serif;
@@ -2079,29 +2120,30 @@ async function kakaoHardLogout() {
 
 /* 서비스 섹션 - TOSS 스타일 */
 .services-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
 }
 
 .service-card {
-  background: var(--white);
-  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, var(--white) 0%, #fafafa 100%);
+  border-radius: 20px;
   padding: 20px 16px;
   text-align: center;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .service-card:hover {
-  box-shadow: var(--shadow-xl);
-  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  transform: translateY(-6px);
 }
 
 .service-card::before {
@@ -2109,19 +2151,19 @@ async function kakaoHardLogout() {
 }
 
 .service-icon {
-  font-size: 36px;
-  margin-bottom: 12px;
+  font-size: 24px;
+  margin-bottom: 6px;
   color: var(--kb-yellow-positive);
   background: var(--primary-light);
-  padding: 12px;
+  padding: 6px;
   border-radius: var(--radius-lg);
   display: inline-block;
 }
 
 .service-card h3 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   color: var(--kb-gray);
   letter-spacing: -0.3px;
 }
@@ -2129,37 +2171,39 @@ async function kakaoHardLogout() {
 .service-card p {
   font-size: 14px;
   color: var(--kb-dark-gray);
-  margin-bottom: 16px;
-  line-height: 1.6;
+  margin-bottom: 8px;
+  line-height: 1.5;
   font-weight: 500;
 }
 
 .service-btn {
-  background: #605850;
+  background: linear-gradient(135deg, #605850 0%, #4a433c 100%);
   color: var(--white);
   border: none;
-  padding: 12px 20px;
-  border-radius: var(--radius-xl);
+  padding: 10px 16px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(96, 88, 80, 0.3);
   width: 100%;
 }
 
 .service-btn:hover {
-  background: #4a433c;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  background: linear-gradient(135deg, #4a433c 0%, #3a332c 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(96, 88, 80, 0.4);
 }
 
 .service-btn.primary {
-  background: var(--kb-yellow-positive);
+  background: linear-gradient(135deg, var(--kb-yellow-positive) 0%, #e6a600 100%);
+  box-shadow: 0 4px 12px rgba(255, 188, 0, 0.3);
 }
 
 .service-btn.primary:hover {
-  background: var(--primary-dark);
+  background: linear-gradient(135deg, #e6a600 0%, #cc9500 100%);
+  box-shadow: 0 6px 16px rgba(255, 188, 0, 0.4);
 }
 
 /* 빠른 도움말 - TOSS 스타일 */
@@ -2288,16 +2332,16 @@ async function kakaoHardLogout() {
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .main-content {
-    padding: 16px;
+    padding: 8px;
   }
 
   .nav-content {
-    padding: 16px 20px;
+    padding: 8px 16px;
   }
 
   .welcome-section {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 12px;
   }
 
   .account-grid {
@@ -2313,15 +2357,15 @@ async function kakaoHardLogout() {
   }
 
   .welcome-title {
-    font-size: 32px;
+    font-size: 20px;
   }
 
   .balance-amount {
-    font-size: 32px;
+    font-size: 24px;
   }
 
   .section-header h2 {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .card-actions {
@@ -2334,7 +2378,7 @@ async function kakaoHardLogout() {
 
   .action-buttons {
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
   
   /* 화면 공유 버튼 스타일 */
@@ -2385,11 +2429,11 @@ async function kakaoHardLogout() {
 
 @media (max-width: 480px) {
   .nav-content {
-    padding: 12px 16px;
+    padding: 6px 12px;
   }
 
   .main-content {
-    padding: 12px;
+    padding: 6px;
   }
 
   .help-grid {
@@ -2397,33 +2441,33 @@ async function kakaoHardLogout() {
   }
 
   .welcome-title {
-    font-size: 28px;
+    font-size: 18px;
   }
 
   .balance-amount {
-    font-size: 28px;
+    font-size: 20px;
   }
 
   .service-card {
-    padding: 24px 20px;
+    padding: 12px 8px;
   }
 
   .account-card {
-    padding: 20px;
+    padding: 12px;
   }
 
   .code-text {
-    font-size: 20px;
+    font-size: 18px;
     letter-spacing: 1px;
   }
 
   .code-display h4 {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .action-btn {
-    padding: 12px 20px;
-    font-size: 14px;
+    padding: 8px 16px;
+    font-size: 12px;
   }
 }
 .modal-mask {
@@ -2449,6 +2493,10 @@ async function kakaoHardLogout() {
 .mode-toggle-btn.login-btn {
   background: var(--success);        /*로그인 */
   color: var(--white);
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  gap: 4px;
 }
 .mode-toggle-btn.login-btn:hover {
   background: #2e7d32;               /* hover용 진한 초록 */
@@ -2460,6 +2508,10 @@ async function kakaoHardLogout() {
 .mode-toggle-btn.logout-btn {
   background: var(--danger);         /* 로그아웃 */
   color: var(--white);
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  gap: 4px;
 }
 .mode-toggle-btn.logout-btn:hover {
   background: #b91c1c;               /* hover용 진한 빨강 */
